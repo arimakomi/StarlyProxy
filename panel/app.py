@@ -21,15 +21,16 @@ if str(PROJECT_ROOT) not in sys.path:
 os.environ['PYTHONPATH'] = str(PROJECT_ROOT)
 
 try:
-    from core import (
-        InstanceManager, ConfigManager, DatabaseManager,
-        AuthManager, BackupManager, MetricsCollector, MultiServerManager
-    )
-    from core.utils import format_bytes, format_duration, get_system_info
+    from core import InstanceManager, ConfigManager
+    from core.auth import AuthManager
+    from core.backup import BackupManager
+    from core.metrics import MetricsManager
+    from core.multiserver import MultiServerManager
+    from core.xray import XrayManager, InboundManager, OutboundManager, UserManager
+    from core.utils import get_system_info
 except ImportError as e:
     print(f"CRITICAL: Cannot import core modules: {e}")
     print(f"PROJECT_ROOT: {PROJECT_ROOT}")
-    print(f"sys.path: {sys.path}")
     sys.exit(1)
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
@@ -39,21 +40,29 @@ CORS(app)
 # Initialize managers
 mgr = InstanceManager()
 config_mgr = ConfigManager()
-db_mgr = DatabaseManager()
 auth_mgr = AuthManager()
 backup_mgr = BackupManager()
-metrics_mgr = MetricsCollector()
+metrics_mgr = MetricsManager()
 multiserver_mgr = MultiServerManager()
+xray_mgr = XrayManager()
+xray_inbound_mgr = InboundManager()
+xray_outbound_mgr = OutboundManager()
+xray_user_mgr = UserManager()
 
 
 # Authentication decorator
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        token = session.get('auth_token')
-        if not token or not auth_mgr.verify_session(token):
-            return redirect(url_for('login'))
+        if 'user_id' not in session:
+            return redirect('/login')
         return f(*args, **kwargs)
+    return decorated_function
+
+
+# Import and register Xray routes
+from xray_routes import register_xray_routes
+register_xray_routes(app, xray_mgr, xray_inbound_mgr, xray_outbound_mgr, xray_user_mgr, login_required)
     return decorated_function
 
 
@@ -205,6 +214,35 @@ def servers_page():
 def users_page():
     """User management page (admin only)"""
     return render_template('users_v3.html')
+
+
+# Xray Routes
+@app.route('/xray')
+@login_required
+def xray_dashboard():
+    """Xray dashboard page"""
+    return render_template('xray_dashboard.html')
+
+
+@app.route('/xray/inbounds')
+@login_required
+def xray_inbounds_page():
+    """Xray inbounds page"""
+    return render_template('xray_inbounds.html')
+
+
+@app.route('/xray/outbounds')
+@login_required
+def xray_outbounds_page():
+    """Xray outbounds page"""
+    return render_template('xray_outbounds.html')
+
+
+@app.route('/xray/users')
+@login_required
+def xray_users_page():
+    """Xray users page"""
+    return render_template('xray_users.html')
 
 
 # API Routes

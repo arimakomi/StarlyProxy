@@ -1,0 +1,186 @@
+{% extends "base_v3.html" %}
+
+{% block title %}Xray Inbounds — StarlyProxy{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1 class="page-title">Xray Inbounds</h1>
+        <p class="page-subtitle">Manage inbound protocols and ports</p>
+    </div>
+    <button onclick="showAddInbound()" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add Inbound
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-body" style="padding: 0;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Tag</th>
+                    <th>Protocol</th>
+                    <th>Port</th>
+                    <th>Network</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="inbounds-table">
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 24px;">
+                        <i class="bi bi-hourglass-split"></i> Loading...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Inbound Modal -->
+<div id="addInboundModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="max-width: 600px; width: 90%; margin: 24px;">
+        <div class="card-header">
+            <span>Add New Inbound</span>
+            <button onclick="closeModal()" class="btn btn-sm btn-secondary">✕</button>
+        </div>
+        <div class="card-body">
+            <form id="addInboundForm" onsubmit="addInbound(event)">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 4px; font-weight: 500;">Protocol</label>
+                    <select id="protocol" class="form-control" required>
+                        <option value="vmess">VMess</option>
+                        <option value="vless">VLESS</option>
+                        <option value="trojan">Trojan</option>
+                        <option value="shadowsocks">Shadowsocks</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 4px; font-weight: 500;">Port</label>
+                    <input type="number" id="port" class="form-control" min="1024" max="65535" required>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 4px; font-weight: 500;">Tag</label>
+                    <input type="text" id="tag" class="form-control" placeholder="Optional">
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 4px; font-weight: 500;">Network</label>
+                    <select id="network" class="form-control">
+                        <option value="tcp">TCP</option>
+                        <option value="ws">WebSocket</option>
+                        <option value="grpc">gRPC</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                    <button type="button" onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadInbounds() {
+    axios.get('/api/xray/inbounds')
+        .then(response => {
+            const inbounds = response.data.inbounds || [];
+            const tbody = document.getElementById('inbounds-table');
+            
+            if (inbounds.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 48px;">
+                            <i class="bi bi-inbox" style="font-size: 48px; color: var(--text-tertiary); display: block; margin-bottom: 16px;"></i>
+                            <p style="color: var(--text-secondary);">No inbounds configured</p>
+                            <button onclick="showAddInbound()" class="btn btn-primary" style="margin-top: 16px;">
+                                <i class="bi bi-plus-circle"></i> Add First Inbound
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = inbounds.map(ib => `
+                <tr>
+                    <td style="font-family: monospace; font-size: 13px;">${ib.tag || '-'}</td>
+                    <td><span class="badge badge-primary">${ib.protocol}</span></td>
+                    <td style="font-weight: 500;">${ib.port}</td>
+                    <td style="color: var(--text-secondary);">${ib.streamSettings?.network || 'tcp'}</td>
+                    <td>
+                        <div style="display: flex; gap: 4px;">
+                            <button onclick="viewInbound('${ib.tag}')" class="btn btn-sm btn-secondary">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button onclick="deleteInbound('${ib.tag}')" class="btn btn-sm btn-secondary" style="color: var(--danger);">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        })
+        .catch(error => {
+            console.error('Error loading inbounds:', error);
+        });
+}
+
+function showAddInbound() {
+    document.getElementById('addInboundModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('addInboundModal').style.display = 'none';
+}
+
+function addInbound(event) {
+    event.preventDefault();
+    
+    const protocol = document.getElementById('protocol').value;
+    const port = parseInt(document.getElementById('port').value);
+    const tag = document.getElementById('tag').value;
+    const network = document.getElementById('network').value;
+    
+    const data = {
+        protocol: protocol,
+        port: port,
+        tag: tag || undefined,
+        network: network
+    };
+    
+    axios.post('/api/xray/inbounds/add', data)
+        .then(response => {
+            alert('Inbound created successfully!');
+            closeModal();
+            loadInbounds();
+            document.getElementById('addInboundForm').reset();
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+function viewInbound(tag) {
+    alert('View inbound: ' + tag);
+}
+
+function deleteInbound(tag) {
+    if (!confirm('Delete inbound "' + tag + '"?')) return;
+    
+    axios.delete('/api/xray/inbounds/remove', { data: { tag: tag } })
+        .then(response => {
+            alert('Inbound deleted');
+            loadInbounds();
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+loadInbounds();
+</script>
+{% endblock %}

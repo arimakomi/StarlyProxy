@@ -1,0 +1,194 @@
+{% extends "base_v3.html" %}
+
+{% block title %}Xray Outbounds — StarlyProxy{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1 class="page-title">Xray Outbounds</h1>
+        <p class="page-subtitle">Connect to remote servers and manage routing</p>
+    </div>
+    <button onclick="showConnectServer()" class="btn btn-primary">
+        <i class="bi bi-hdd-network"></i> Connect Server
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-body" style="padding: 0;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Tag</th>
+                    <th>Protocol</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="outbounds-table">
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 24px;">
+                        <i class="bi bi-hourglass-split"></i> Loading...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Connect Server Modal -->
+<div id="connectModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="max-width: 600px; width: 90%; margin: 24px;">
+        <div class="card-header">
+            <span>Connect Remote Server</span>
+            <button onclick="closeModal()" class="btn btn-sm btn-secondary">✕</button>
+        </div>
+        <div class="card-body">
+            <form id="connectForm" onsubmit="connectServer(event)">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 4px; font-weight: 500;">Server Address</label>
+                    <input type="text" id="server_address" class="form-control" placeholder="example.com or IP" required>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 4px; font-weight: 500;">Server Port</label>
+                    <input type="number" id="server_port" class="form-control" min="1" max="65535" placeholder="443" required>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 4px; font-weight: 500;">Protocol</label>
+                    <select id="server_protocol" class="form-control" required>
+                        <option value="vmess">VMess</option>
+                        <option value="vless">VLESS</option>
+                        <option value="trojan">Trojan</option>
+                        <option value="shadowsocks">Shadowsocks</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 4px; font-weight: 500;">UUID / Password</label>
+                    <input type="text" id="server_uuid" class="form-control" placeholder="UUID or password" required>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 4px; font-weight: 500;">Tag (Optional)</label>
+                    <input type="text" id="server_tag" class="form-control" placeholder="proxy-server">
+                </div>
+                
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                    <button type="button" onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Connect</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadOutbounds() {
+    axios.get('/api/xray/outbounds')
+        .then(response => {
+            const outbounds = response.data.outbounds || [];
+            const tbody = document.getElementById('outbounds-table');
+            
+            if (outbounds.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 48px;">
+                            <i class="bi bi-hdd-network" style="font-size: 48px; color: var(--text-tertiary); display: block; margin-bottom: 16px;"></i>
+                            <p style="color: var(--text-secondary);">No outbound servers</p>
+                            <button onclick="showConnectServer()" class="btn btn-primary" style="margin-top: 16px;">
+                                <i class="bi bi-plus-circle"></i> Connect First Server
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = outbounds.map(ob => {
+                const isDefault = ['direct', 'block'].includes(ob.tag);
+                const statusColor = ob.tag === 'direct' ? 'success' : ob.tag === 'block' ? 'danger' : 'primary';
+                
+                return `
+                    <tr>
+                        <td style="font-family: monospace; font-size: 13px;">${ob.tag}</td>
+                        <td><span class="badge badge-${statusColor}">${ob.protocol}</span></td>
+                        <td style="color: var(--text-secondary);">${isDefault ? 'System' : 'Custom'}</td>
+                        <td>
+                            <span class="badge badge-success">
+                                <span class="badge-dot"></span> Active
+                            </span>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 4px;">
+                                <button onclick="viewOutbound('${ob.tag}')" class="btn btn-sm btn-secondary">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                ${!isDefault ? `
+                                    <button onclick="deleteOutbound('${ob.tag}')" class="btn btn-sm btn-secondary" style="color: var(--danger);">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        })
+        .catch(error => {
+            console.error('Error loading outbounds:', error);
+        });
+}
+
+function showConnectServer() {
+    document.getElementById('connectModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('connectModal').style.display = 'none';
+}
+
+function connectServer(event) {
+    event.preventDefault();
+    
+    const data = {
+        server_address: document.getElementById('server_address').value,
+        server_port: parseInt(document.getElementById('server_port').value),
+        protocol: document.getElementById('server_protocol').value,
+        uuid: document.getElementById('server_uuid').value,
+        tag: document.getElementById('server_tag').value || 'proxy-server'
+    };
+    
+    axios.post('/api/xray/outbounds/connect', data)
+        .then(response => {
+            alert('Server connected successfully!');
+            closeModal();
+            loadOutbounds();
+            document.getElementById('connectForm').reset();
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+function viewOutbound(tag) {
+    alert('View outbound: ' + tag);
+}
+
+function deleteOutbound(tag) {
+    if (!confirm('Remove outbound "' + tag + '"?')) return;
+    
+    axios.delete('/api/xray/outbounds/remove', { data: { tag: tag } })
+        .then(response => {
+            alert('Outbound removed');
+            loadOutbounds();
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+loadOutbounds();
+</script>
+{% endblock %}

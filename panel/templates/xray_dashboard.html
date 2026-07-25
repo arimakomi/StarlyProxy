@@ -1,0 +1,188 @@
+{% extends "base_v3.html" %}
+
+{% block title %}Xray Dashboard — StarlyProxy{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Xray Management</h1>
+    <p class="page-subtitle">Xray-core proxy management</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Status</div>
+        <div class="stat-value" id="xray-status">--</div>
+        <div class="stat-change">Service</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-label">Inbounds</div>
+        <div class="stat-value" id="inbound-count">0</div>
+        <div class="stat-change">Active protocols</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-label">Users</div>
+        <div class="stat-value" id="user-count">0</div>
+        <div class="stat-change">Total clients</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-label">Outbounds</div>
+        <div class="stat-value" id="outbound-count">0</div>
+        <div class="stat-change">Connected servers</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span><i class="bi bi-gear"></i> Xray Control</span>
+    </div>
+    <div class="card-body">
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button onclick="xrayAction('start')" class="btn btn-primary">
+                <i class="bi bi-play-fill"></i> Start
+            </button>
+            <button onclick="xrayAction('stop')" class="btn btn-secondary">
+                <i class="bi bi-stop-fill"></i> Stop
+            </button>
+            <button onclick="xrayAction('restart')" class="btn btn-secondary">
+                <i class="bi bi-arrow-clockwise"></i> Restart
+            </button>
+            <button onclick="loadStatus()" class="btn btn-secondary">
+                <i class="bi bi-arrow-repeat"></i> Refresh
+            </button>
+            <button onclick="showLogs()" class="btn btn-secondary">
+                <i class="bi bi-terminal"></i> View Logs
+            </button>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 24px;">
+    <div class="card">
+        <div class="card-header">
+            <span><i class="bi bi-arrow-down-circle"></i> Inbounds</span>
+            <a href="/xray/inbounds" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus"></i> Manage
+            </a>
+        </div>
+        <div class="card-body" id="inbounds-preview">
+            <p style="color: var(--text-secondary); text-align: center;">Loading...</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <span><i class="bi bi-arrow-up-circle"></i> Outbounds</span>
+            <a href="/xray/outbounds" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus"></i> Manage
+            </a>
+        </div>
+        <div class="card-body" id="outbounds-preview">
+            <p style="color: var(--text-secondary); text-align: center;">Loading...</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <span><i class="bi bi-people"></i> Users</span>
+            <a href="/xray/users" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus"></i> Manage
+            </a>
+        </div>
+        <div class="card-body" id="users-preview">
+            <p style="color: var(--text-secondary); text-align: center;">Loading...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadStatus() {
+    axios.get('/api/xray/status')
+        .then(response => {
+            const data = response.data;
+            
+            // Update status
+            document.getElementById('xray-status').innerHTML = 
+                data.running ? '<span style="color: var(--success)">Running</span>' : 
+                               '<span style="color: var(--danger)">Stopped</span>';
+            
+            // Update counts
+            document.getElementById('inbound-count').textContent = data.inbound_count || 0;
+            document.getElementById('user-count').textContent = data.user_count || 0;
+            document.getElementById('outbound-count').textContent = data.outbound_count || 0;
+            
+            // Update previews
+            loadPreviews();
+        })
+        .catch(error => {
+            console.error('Error loading status:', error);
+        });
+}
+
+function loadPreviews() {
+    // Load inbounds preview
+    axios.get('/api/xray/inbounds')
+        .then(response => {
+            const inbounds = response.data.inbounds || [];
+            const html = inbounds.length > 0 ? 
+                inbounds.slice(0, 3).map(ib => 
+                    `<div style="padding: 8px; border-bottom: 1px solid var(--border);">
+                        <strong>${ib.protocol}</strong> - Port ${ib.port}
+                    </div>`
+                ).join('') :
+                '<p style="color: var(--text-secondary); text-align: center;">No inbounds</p>';
+            document.getElementById('inbounds-preview').innerHTML = html;
+        });
+    
+    // Load outbounds preview
+    axios.get('/api/xray/outbounds')
+        .then(response => {
+            const outbounds = response.data.outbounds || [];
+            const html = outbounds.length > 0 ? 
+                outbounds.slice(0, 3).map(ob => 
+                    `<div style="padding: 8px; border-bottom: 1px solid var(--border);">
+                        <strong>${ob.tag}</strong> - ${ob.protocol}
+                    </div>`
+                ).join('') :
+                '<p style="color: var(--text-secondary); text-align: center;">No outbounds</p>';
+            document.getElementById('outbounds-preview').innerHTML = html;
+        });
+    
+    // Load users preview
+    axios.get('/api/xray/users')
+        .then(response => {
+            const users = response.data.users || [];
+            const html = users.length > 0 ? 
+                users.slice(0, 3).map(u => 
+                    `<div style="padding: 8px; border-bottom: 1px solid var(--border);">
+                        <strong>${u.email}</strong> - ${u.protocol}
+                    </div>`
+                ).join('') :
+                '<p style="color: var(--text-secondary); text-align: center;">No users</p>';
+            document.getElementById('users-preview').innerHTML = html;
+        });
+}
+
+function xrayAction(action) {
+    if (!confirm('Confirm ' + action + ' Xray service?')) return;
+    
+    axios.post('/api/xray/' + action)
+        .then(response => {
+            alert('Xray service ' + action + 'ed successfully!');
+            loadStatus();
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+function showLogs() {
+    window.location.href = '/xray/logs';
+}
+
+// Load on page load
+loadStatus();
+</script>
+{% endblock %}

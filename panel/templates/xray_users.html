@@ -1,0 +1,252 @@
+{% extends "base_v3.html" %}
+
+{% block title %}Xray Users — StarlyProxy{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1 class="page-title">Xray Users</h1>
+        <p class="page-subtitle">Manage proxy clients and generate links</p>
+    </div>
+    <button onclick="showAddUser()" class="btn btn-primary">
+        <i class="bi bi-person-plus"></i> Add User
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-body" style="padding: 0;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Protocol</th>
+                    <th>Traffic</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="users-table">
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 24px;">
+                        <i class="bi bi-hourglass-split"></i> Loading...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div id="addUserModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="max-width: 600px; width: 90%; margin: 24px;">
+        <div class="card-header">
+            <span>Add New User</span>
+            <button onclick="closeModal()" class="btn btn-sm btn-secondary">✕</button>
+        </div>
+        <div class="card-body">
+            <form id="addUserForm" onsubmit="addUser(event)">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 4px; font-weight: 500;">Email</label>
+                    <input type="email" id="user_email" class="form-control" placeholder="user@example.com" required>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 4px; font-weight: 500;">Protocol</label>
+                    <select id="user_protocol" class="form-control" required>
+                        <option value="vmess">VMess</option>
+                        <option value="vless">VLESS</option>
+                        <option value="trojan">Trojan</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 4px; font-weight: 500;">Inbound Tag</label>
+                    <select id="user_inbound" class="form-control" required>
+                        <option value="">Select inbound...</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 4px; font-weight: 500;">Traffic Limit (GB, 0 = unlimited)</label>
+                    <input type="number" id="user_traffic" class="form-control" min="0" value="0">
+                </div>
+                
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                    <button type="button" onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View User Modal -->
+<div id="viewUserModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="max-width: 700px; width: 90%; margin: 24px;">
+        <div class="card-header">
+            <span>User Details</span>
+            <button onclick="closeViewModal()" class="btn btn-sm btn-secondary">✕</button>
+        </div>
+        <div class="card-body" id="userDetails">
+            Loading...
+        </div>
+    </div>
+</div>
+
+<script>
+let currentUserUUID = null;
+
+function loadUsers() {
+    axios.get('/api/xray/users')
+        .then(response => {
+            const users = response.data.users || [];
+            const tbody = document.getElementById('users-table');
+            
+            if (users.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 48px;">
+                            <i class="bi bi-people" style="font-size: 48px; color: var(--text-tertiary); display: block; margin-bottom: 16px;"></i>
+                            <p style="color: var(--text-secondary);">No users created</p>
+                            <button onclick="showAddUser()" class="btn btn-primary" style="margin-top: 16px;">
+                                <i class="bi bi-person-plus"></i> Add First User
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = users.map(user => {
+                const trafficGB = (user.traffic_used / (1024**3)).toFixed(2);
+                const limitGB = user.traffic_limit || 0;
+                const trafficText = limitGB > 0 ? `${trafficGB} / ${limitGB} GB` : `${trafficGB} GB`;
+                const statusBadge = user.enable ? 
+                    '<span class="badge badge-success"><span class="badge-dot"></span> Active</span>' :
+                    '<span class="badge badge-secondary">Disabled</span>';
+                
+                return `
+                    <tr>
+                        <td style="font-weight: 500;">${user.email}</td>
+                        <td><span class="badge badge-primary">${user.protocol}</span></td>
+                        <td style="font-family: monospace; font-size: 13px;">${trafficText}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <div style="display: flex; gap: 4px;">
+                                <button onclick="viewUser('${user.uuid}')" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button onclick="toggleUser('${user.uuid}', ${!user.enable})" class="btn btn-sm btn-secondary">
+                                    <i class="bi bi-${user.enable ? 'pause' : 'play'}-fill"></i>
+                                </button>
+                                <button onclick="deleteUser('${user.uuid}')" class="btn btn-sm btn-secondary" style="color: var(--danger);">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        })
+        .catch(error => {
+            console.error('Error loading users:', error);
+        });
+}
+
+function showAddUser() {
+    // Load inbounds for dropdown
+    axios.get('/api/xray/inbounds')
+        .then(response => {
+            const inbounds = response.data.inbounds || [];
+            const select = document.getElementById('user_inbound');
+            select.innerHTML = '<option value="">Select inbound...</option>' +
+                inbounds.map(ib => `<option value="${ib.tag}">${ib.tag} (${ib.protocol})</option>`).join('');
+        });
+    
+    document.getElementById('addUserModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('addUserModal').style.display = 'none';
+}
+
+function closeViewModal() {
+    document.getElementById('viewUserModal').style.display = 'none';
+}
+
+function addUser(event) {
+    event.preventDefault();
+    
+    const data = {
+        email: document.getElementById('user_email').value,
+        protocol: document.getElementById('user_protocol').value,
+        inbound_tag: document.getElementById('user_inbound').value,
+        traffic_limit: parseInt(document.getElementById('user_traffic').value)
+    };
+    
+    axios.post('/api/xray/users/add', data)
+        .then(response => {
+            alert('User created successfully!');
+            closeModal();
+            loadUsers();
+            document.getElementById('addUserForm').reset();
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+function viewUser(uuid) {
+    axios.get('/api/xray/users/' + uuid)
+        .then(response => {
+            const user = response.data.user;
+            document.getElementById('userDetails').innerHTML = `
+                <div style="margin-bottom: 16px;">
+                    <strong>UUID:</strong><br>
+                    <code style="background: var(--bg-hover); padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 4px;">${user.uuid}</code>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <strong>Email:</strong> ${user.email}
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <strong>Protocol:</strong> ${user.protocol}
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <strong>Config Link:</strong><br>
+                    <textarea readonly style="width: 100%; height: 80px; font-family: monospace; font-size: 11px; padding: 8px; background: var(--bg-hover); border: 1px solid var(--border); border-radius: 4px; margin-top: 4px;">${user.link || 'Not available'}</textarea>
+                </div>
+            `;
+            document.getElementById('viewUserModal').style.display = 'flex';
+        })
+        .catch(error => {
+            alert('Error loading user details: ' + error.message);
+        });
+}
+
+function toggleUser(uuid, enable) {
+    const action = enable ? 'enable' : 'disable';
+    axios.post('/api/xray/users/' + uuid + '/' + action)
+        .then(response => {
+            loadUsers();
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        });
+}
+
+function deleteUser(uuid) {
+    if (!confirm('Delete this user?')) return;
+    
+    axios.delete('/api/xray/users/' + uuid)
+        .then(response => {
+            alert('User deleted');
+            loadUsers();
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        });
+}
+
+loadUsers();
+</script>
+{% endblock %}
