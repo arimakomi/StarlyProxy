@@ -245,6 +245,22 @@ paqctl v1.1.0 introduces powerful automated optimizations while making installat
 
 ---
 
+## 🔀 Running Multiple Servers on One Client
+
+By default, paqctl manages a single client connection (one `config.yaml`, one `paqctl.service`). If you want to connect to **several servers at once** from the same machine (e.g. primary + failover, or different regions), use the companion script **[paqet-multi.sh](./paqet-multi.sh)**.
+
+It reuses the `paqet` binary paqctl already installed, and gives each server its own config, its own local SOCKS5 port (auto-assigned), and its own independent systemd service — with an interactive menu and a scriptable CLI.
+
+```bash
+curl -sLO https://raw.githubusercontent.com/arimakomi/paqctl/main/paqet-multi.sh
+chmod +x paqet-multi.sh
+sudo ./paqet-multi.sh
+```
+
+Full guide (English + Persian): **[MULTI-SERVER.md](./MULTI-SERVER.md)**
+
+---
+
 ## Quick Start
 
 ### 1. Server Setup (Linux VPS)
@@ -1431,6 +1447,22 @@ paqctl به صورت خودکار SOCKS5 را روی پورت آزاد بعدی 
 - **🛡️ واچ‌داگ خودکار و ریکاوری بدون قطعی (Watchdog)**: پایش دائمی سلامت اتصال (`sudo paqctl watchdog` یا گزینه `w` در منو). با ایجاد سرویس بک‌گراند (systemd در لینوکس و Task Scheduler در ویندوز)، وضعیت تانل را هر ۱ دقیقه بررسی کرده و در صورت بروز اختلال، اتصال را به صورت خودکار بازیابی می‌کند.
 - **⚡ تشخیص هوشمند و همگام‌سازی خودکار MTU (Auto-Sync Min-MTU)**: محاسبه خودکار اندازه بسته با حاشیه امنیت ۱۵۰ بایت و گنجاندن عدد MTU سرور داخل لینک‌های اشتراک‌گذاری `paqet://`. هنگام ایمپورت در سمت کلاینت یا سرور داخلی، مکانیزم هوشمند **`min(Local_MTU, Server_MTU)`** مانع از هرگونه اورفلو، ارور `Message too large` در سطح کرنل و کرش اتصال می‌شود.
 - **🖥️ ساخت شورت‌کات دسکتاپ و اتصال خودکار در ویندوز**: ایجاد شورت‌کات دسکتاپ و فعال‌سازی قابلیت اتصال خودکار از طریق منوی کلاینت ویندوز.
+
+---
+
+## 🔀 اتصال به چند سرور هم‌زمان روی یک کلاینت
+
+به‌صورت پیش‌فرض، paqctl فقط یک اتصال کلاینت رو مدیریت می‌کنه (یک `config.yaml`، یک `paqctl.service`). اگه می‌خوای هم‌زمان به **چند سرور مختلف** از یک دستگاه وصل بشی (مثلاً سرور اصلی + بکاپ، یا چند منطقه مختلف)، از اسکریپت کمکی **[paqet-multi.sh](./paqet-multi.sh)** استفاده کن.
+
+این اسکریپت از همون باینری `paqet` که paqctl نصب کرده استفاده می‌کنه و به هر سرور کانفیگ، پورت SOCKS5 (خودکار)، و سرویس systemd مستقل خودش رو می‌ده — با منوی تعاملی و دستورات CLI برای اسکریپت‌نویسی.
+
+```bash
+curl -sLO https://raw.githubusercontent.com/arimakomi/paqctl/main/paqet-multi.sh
+chmod +x paqet-multi.sh
+sudo ./paqet-multi.sh
+```
+
+راهنمای کامل (فارسی و انگلیسی): **[MULTI-SERVER.md](./MULTI-SERVER.md)**
 
 ---
 
