@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - StarlyProxy{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4"><i class="bi bi-gear"></i> Settings</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-sliders"></i> General Settings
+            </div>
+            <div class="card-body">
+                <form id="settingsForm">
+                    <div class="mb-3">
+                        <label for="maxInstances" class="form-label">Maximum Instances</label>
+                        <input type="number" class="form-control" id="maxInstances" value="20" min="1" max="100">
+                        <small class="text-muted">Maximum number of instances that can be created</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="baseSocksPort" class="form-label">Base SOCKS Port</label>
+                        <input type="number" class="form-control" id="baseSocksPort" value="1080" min="1024" max="65535">
+                        <small class="text-muted">Starting port for auto-assigned SOCKS ports</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="logLevel" class="form-label">Log Level</label>
+                        <select class="form-select" id="logLevel">
+                            <option value="DEBUG">Debug</option>
+                            <option value="INFO" selected>Info</option>
+                            <option value="WARNING">Warning</option>
+                            <option value="ERROR">Error</option>
+                        </select>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="autoRestart" checked>
+                        <label class="form-check-label" for="autoRestart">
+                            Enable auto-restart for all instances
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Save Settings
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <i class="bi bi-shield-check"></i> Security
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Panel Access</label>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Panel authentication will be added in future version
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">API Keys</label>
+                    <button class="btn btn-secondary btn-sm" disabled>
+                        <i class="bi bi-key"></i> Generate API Key (Coming soon)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-database"></i> Database Management
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Database Size</label>
+                    <p class="mb-0" id="dbSize">Calculating...</p>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Clean Old Logs</label>
+                    <button class="btn btn-warning" onclick="cleanOldLogs()">
+                        <i class="bi bi-trash"></i> Clean Logs Older Than 7 Days
+                    </button>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Backup Database</label>
+                    <button class="btn btn-success" onclick="backupDatabase()">
+                        <i class="bi bi-download"></i> Create Backup
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <i class="bi bi-info-circle"></i> About
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <th>Version:</th>
+                        <td>3.0.0</td>
+                    </tr>
+                    <tr>
+                        <th>Author:</th>
+                        <td>STaRly (Artin)</td>
+                    </tr>
+                    <tr>
+                        <th>License:</th>
+                        <td>AGPL-3.0</td>
+                    </tr>
+                    <tr>
+                        <th>Repository:</th>
+                        <td><a href="https://github.com/arimakomi/StarlyProxy" target="_blank">GitHub</a></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle"></i> Danger Zone
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Stop All Instances</label>
+                    <button class="btn btn-danger" onclick="stopAllInstances()">
+                        <i class="bi bi-stop-circle"></i> Stop All
+                    </button>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Reset Database</label>
+                    <button class="btn btn-danger" onclick="resetDatabase()" disabled>
+                        <i class="bi bi-database-x"></i> Reset Database (Disabled)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Get database size
+axios.get('/api/system')
+    .then(response => {
+        document.getElementById('dbSize').textContent = 'Database operational';
+    })
+    .catch(error => {
+        document.getElementById('dbSize').textContent = 'Error retrieving size';
+    });
+
+// Settings form
+document.getElementById('settingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    alert('Settings saved successfully! (Note: Settings persistence will be added in future version)');
+});
+
+function cleanOldLogs() {
+    if (!confirm('Clean all logs older than 7 days?')) return;
+    alert('Log cleanup functionality will be added in future version');
+}
+
+function backupDatabase() {
+    alert('Database backup functionality will be added in future version');
+}
+
+function stopAllInstances() {
+    if (!confirm('⚠️ Stop all running instances?')) return;
+    
+    axios.post('/api/instances/stop-all')
+        .then(response => {
+            alert('All instances stopped successfully');
+            location.reload();
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+function resetDatabase() {
+    alert('Database reset is disabled for safety');
+}
+</script>
+{% endblock %}

@@ -191,5 +191,46 @@ def format_duration_filter(value):
     return format_duration(value)
 
 
+@app.route('/settings')
+def settings():
+    """Settings page"""
+    return render_template('settings.html')
+
+
+@app.route('/api/instances/stop-all', methods=['POST'])
+def api_stop_all():
+    """Stop all instances"""
+    try:
+        mgr = InstanceManager()
+        instances = mgr.list_instances()
+        stopped = 0
+        
+        for inst in instances:
+            if inst.get('status') == 'running':
+                if mgr.stop_instance(inst['name']):
+                    stopped += 1
+        
+        return jsonify({'success': True, 'stopped': stopped})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/system')
+def api_system():
+    """System information"""
+    try:
+        import psutil
+        
+        return jsonify({
+            'cpu_percent': psutil.cpu_percent(interval=1),
+            'memory_percent': psutil.virtual_memory().percent,
+            'disk_percent': psutil.disk_usage('/').percent
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    import os
+    port = int(os.environ.get('FLASK_PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
