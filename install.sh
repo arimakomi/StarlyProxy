@@ -333,12 +333,12 @@ pip install --no-cache-dir flask-cors >> "$LOG_FILE" 2>&1 || {
     log "WARNING: flask-cors install failed"
 }
 
-# Requests for multi-server (required)
+# Requests for multi-server (REQUIRED for panel)
 echo -e "${CYAN}   → Installing requests library...${NC}"
 if ! install_pip_package "requests"; then
-    echo -e "${YELLOW}   ⚠️  Requests failed, multi-server will not work${NC}"
-    log "WARNING: requests install failed"
+    error_exit "Failed to install requests library (required for panel)"
 fi
+echo -e "${GREEN}   ✓ requests installed${NC}"
 
 # Colorama for CLI colors (optional)
 echo -e "${CYAN}   → Installing CLI enhancements...${NC}"
@@ -355,6 +355,7 @@ try:
     import psutil
     import yaml
     import flask
+    import requests
     print("✓ All critical packages verified")
 except ImportError as e:
     print(f"✗ Import failed: {e}")
