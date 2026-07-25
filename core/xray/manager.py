@@ -11,7 +11,6 @@ from typing import Optional, Dict, Any, List, Tuple
 
 
 class XrayManager:
-class XrayManager:
     """Manage Xray-core process"""
     
     def __init__(self, config_dir: str = "/etc/starlyproxy/xray",
