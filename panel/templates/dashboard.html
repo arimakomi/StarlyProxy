@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}داشبورد - StarlyProxy{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4"><i class="bi bi-speedometer2"></i> داشبورد</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card stat-card">
+            <div class="stat-number">{{ total }}</div>
+            <div class="stat-label">مجموع Instance ها</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card">
+            <div class="stat-number text-success">{{ running }}</div>
+            <div class="stat-label">در حال اجرا</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card">
+            <div class="stat-number text-danger">{{ stopped }}</div>
+            <div class="stat-label">متوقف شده</div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-hdd"></i> اطلاعات سیستم
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <th>سیستم عامل:</th>
+                        <td>{{ system_info.os }} {{ system_info.os_version }}</td>
+                    </tr>
+                    <tr>
+                        <th>هاست:</th>
+                        <td>{{ system_info.hostname }}</td>
+                    </tr>
+                    <tr>
+                        <th>CPU:</th>
+                        <td>{{ system_info.cpu_count }} هسته</td>
+                    </tr>
+                    <tr>
+                        <th>حافظه:</th>
+                        <td>{{ system_info.memory_total_gb }} GB</td>
+                    </tr>
+                    <tr>
+                        <th>Python:</th>
+                        <td>{{ system_info.python_version }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-activity"></i> Instance های اخیر
+            </div>
+            <div class="card-body">
+                {% if instances %}
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>نام</th>
+                            <th>نوع</th>
+                            <th>وضعیت</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inst in instances[:5] %}
+                        <tr>
+                            <td><a href="/instance/{{ inst.name }}">{{ inst.name }}</a></td>
+                            <td>{{ inst.type }}</td>
+                            <td>
+                                <span class="status-badge status-{{ inst.status }}">
+                                    {{ inst.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="/instance/{{ inst.name }}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <a href="/instances" class="btn btn-sm btn-primary w-100">مشاهده همه</a>
+                {% else %}
+                <p class="text-muted text-center">هیچ instance ای وجود ندارد.</p>
+                <a href="/add" class="btn btn-primary w-100">افزودن اولین Instance</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

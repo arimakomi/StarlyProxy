@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}{{ instance.name }} - StarlyProxy{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-box"></i> جزئیات Instance: {{ instance.name }}</h2>
+        <a href="/instances" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> بازگشت
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-info-circle"></i> اطلاعات پایه
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <th>نام:</th>
+                        <td><strong>{{ instance.name }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>نوع:</th>
+                        <td><span class="badge bg-info">{{ instance.type }}</span></td>
+                    </tr>
+                    <tr>
+                        <th>حالت:</th>
+                        <td><span class="badge bg-secondary">{{ instance.mode }}</span></td>
+                    </tr>
+                    <tr>
+                        <th>وضعیت:</th>
+                        <td>
+                            <span class="status-badge status-{{ instance.actual_status }}">
+                                {{ instance.actual_status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% if instance.socks_port %}
+                    <tr>
+                        <th>پورت SOCKS:</th>
+                        <td><code>127.0.0.1:{{ instance.socks_port }}</code></td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <th>سرور:</th>
+                        <td><code>{{ instance.server_address }}</code></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        {% if instance.actual_status == 'running' %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <i class="bi bi-activity"></i> منابع سیستم
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">CPU</label>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: {{ instance.cpu_percent }}%">
+                            {{ "%.1f"|format(instance.cpu_percent) }}%
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Memory</label>
+                    <p class="mb-0">{{ "%.1f"|format(instance.memory_mb) }} MB</p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">PID</label>
+                    <p class="mb-0"><code>{{ instance.pid }}</code></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Uptime</label>
+                    <p class="mb-0">{{ instance.uptime|format_duration }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <i class="bi bi-gear"></i> عملیات
+            </div>
+            <div class="card-body d-grid gap-2">
+                {% if instance.actual_status == 'running' %}
+                <button class="btn btn-warning" onclick="stopInstance()">
+                    <i class="bi bi-stop-fill"></i> توقف
+                </button>
+                <button class="btn btn-secondary" onclick="restartInstance()">
+                    <i class="bi bi-arrow-clockwise"></i> ریستارت
+                </button>
+                {% else %}
+                <button class="btn btn-success" onclick="startInstance()">
+                    <i class="bi bi-play-fill"></i> شروع
+                </button>
+                {% endif %}
+                <button class="btn btn-danger" onclick="deleteInstance()">
+                    <i class="bi bi-trash"></i> حذف Instance
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-file-text"></i> لاگ‌ها (100 خط آخر)
+            </div>
+            <div class="card-body">
+                <div class="log-container" style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 5px; max-height: 400px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 0.85rem;">
+                    {% if logs %}
+                        {% for log in logs|reverse %}
+                        <div class="log-line">
+                            <span style="color: #569cd6;">[{{ log.timestamp }}]</span>
+                            <span style="color: {% if log.level == 'ERROR' %}#f44747{% elif log.level == 'WARNING' %}#ffa500{% else %}#4ec9b0{% endif %};">[{{ log.level }}]</span>
+                            <span style="color: #ce9178;">{{ log.message }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center mb-0">لاگی وجود ندارد</p>
+                    {% endif %}
+                </div>
+                <button class="btn btn-sm btn-outline-primary mt-2" onclick="refreshLogs()">
+                    <i class="bi bi-arrow-clockwise"></i> بروزرسانی
+                </button>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <i class="bi bi-graph-up"></i> آمار 24 ساعت گذشته
+            </div>
+            <div class="card-body">
+                {% if stats %}
+                <canvas id="statsChart" height="80"></canvas>
+                {% else %}
+                <p class="text-muted text-center">آماری موجود نیست</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.0/dist/chart.umd.min.js"></script>
+<script>
+const instanceName = "{{ instance.name }}";
+
+function startInstance() {
+    if (!confirm('آیا می‌خواهید این instance را شروع کنید؟')) return;
+    
+    axios.post(`/api/instance/${instanceName}/start`)
+        .then(response => {
+            alert('Instance با موفقیت شروع شد.');
+            location.reload();
+        })
+        .catch(error => {
+            alert('خطا: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+function stopInstance() {
+    if (!confirm('آیا می‌خواهید این instance را متوقف کنید؟')) return;
+    
+    axios.post(`/api/instance/${instanceName}/stop`)
+        .then(response => {
+            alert('Instance با موفقیت متوقف شد.');
+            location.reload();
+        })
+        .catch(error => {
+            alert('خطا: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+function restartInstance() {
+    if (!confirm('آیا می‌خواهید این instance را ریستارت کنید؟')) return;
+    
+    axios.post(`/api/instance/${instanceName}/restart`)
+        .then(response => {
+            alert('Instance با موفقیت ریستارت شد.');
+            location.reload();
+        })
+        .catch(error => {
+            alert('خطا: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+function deleteInstance() {
+    if (!confirm('⚠️ آیا مطمئن هستید؟ این عملیات غیرقابل بازگشت است!')) return;
+    
+    axios.delete(`/api/instance/${instanceName}/delete`)
+        .then(response => {
+            alert('Instance با موفقیت حذف شد.');
+            window.location.href = '/instances';
+        })
+        .catch(error => {
+            alert('خطا: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+function refreshLogs() {
+    location.reload();
+}
+
+// Chart for stats
+{% if stats %}
+const stats = {{ stats|tojson }};
+const ctx = document.getElementById('statsChart');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: stats.map(s => new Date(s.timestamp).toLocaleTimeString('fa-IR')),
+        datasets: [{
+            label: 'Bytes Sent',
+            data: stats.map(s => s.bytes_sent),
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1
+        }, {
+            label: 'Bytes Received',
+            data: stats.map(s => s.bytes_received),
+            borderColor: 'rgb(255, 99, 132)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'top',
+            }
+        }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

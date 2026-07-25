@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}افزودن Instance - StarlyProxy{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-plus-circle"></i> افزودن Instance جدید
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/add">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">نام Instance *</label>
+                        <input type="text" class="form-control" id="name" name="name" required 
+                               placeholder="مثال: germany-1" pattern="[a-zA-Z0-9_-]+"
+                               title="فقط حروف انگلیسی، اعداد، خط تیره و زیرخط">
+                        <small class="text-muted">نام یکتا برای شناسایی instance</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="type" class="form-label">نوع پروکسی *</label>
+                            <select class="form-select" id="type" name="type" required>
+                                <option value="paqet">Paqet (ساده و سریع)</option>
+                                <option value="gfk">GFK (سانسور سنگین)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="mode" class="form-label">حالت *</label>
+                            <select class="form-select" id="mode" name="mode" required>
+                                <option value="client">Client (کلاینت)</option>
+                                <option value="server">Server (سرور)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="server" class="form-label">آدرس سرور *</label>
+                        <input type="text" class="form-control" id="server" name="server" required 
+                               placeholder="1.2.3.4:8443" pattern="[\d\.:]+">
+                        <small class="text-muted">فرمت: IP:PORT مثلاً 1.2.3.4:8443</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="key" class="form-label">کلید رمزنگاری *</label>
+                        <input type="text" class="form-control" id="key" name="key" required 
+                               placeholder="کلید قوی و یکتا" minlength="16">
+                        <small class="text-muted">حداقل 16 کاراکتر - از کلیدهای پیش‌فرض استفاده نکنید</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="profile" class="form-label">پروفایل عملکرد</label>
+                        <select class="form-select" id="profile" name="profile">
+                            <option value="standard">Standard - استاندارد (پیش‌فرض)</option>
+                            <option value="high-loss">High-Loss - برای شبکه با افت بسته</option>
+                            <option value="cdn">CDN - پرسرعت برای تونل چندلایه</option>
+                            <option value="gaming">Gaming - کم‌تاخیر برای بازی و VOIP</option>
+                        </select>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> <strong>راهنما:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li><strong>Paqet:</strong> برای اکثر شرایط - سریع، ساده و قابل‌اعتماد</li>
+                            <li><strong>GFK:</strong> برای سانسور سنگین (فایروال بزرگ چین، ایران)</li>
+                            <li><strong>Client:</strong> روی دستگاه خودتان (پورت SOCKS خودکار تخصیص می‌یابد)</li>
+                            <li><strong>Server:</strong> روی VPS خارج از شبکه محدود</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle"></i> ایجاد Instance
+                        </button>
+                        <a href="/instances" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> انصراف
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

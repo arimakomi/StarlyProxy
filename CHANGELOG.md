@@ -1,0 +1,180 @@
+# StarlyProxy v3.0 - Changelog
+
+## v3.0.0 (2026-07-25) - کامل شده ✅
+
+### 🎉 تغییرات عمده
+
+**بازنویسی کامل پروژه** - از یک مجموعه اسکریپت به یک سیستم مدیریت حرفه‌ای.
+
+### ✨ ویژگی‌های جدید
+
+#### 🏗️ معماری جدید
+- **Core Module** - هسته مرکزی با ConfigManager، DatabaseManager، InstanceManager
+- **Proxy Wrappers** - پوشش‌های یکپارچه برای Paqet و GFK
+- **Database Layer** - SQLite برای ذخیره configs، logs و stats
+- **Plugin Architecture** - قابلیت افزودن proxy types جدید
+
+#### 🚀 مدیریت چند Instance
+- پشتیبانی نامحدود از instance های همزمان
+- هر instance با config، port، و process مستقل
+- Auto-assign پورت‌های SOCKS بدون تداخل
+- مدیریت lifecycle کامل (start/stop/restart)
+
+#### 🎨 پنل وب Flask
+- **Dashboard** - نمای کلی با آمار real-time
+- **Instance Manager** - مدیریت کامل از مرورگر
+- **Live Logs** - نمایش لاگ‌ها با رنگ‌بندی
+- **Charts & Stats** - نمودارهای مصرف و ترافیک
+- **REST API** - تمام عملیات از طریق API
+
+#### ⚡ CLI قدرتمند
+- دستورات فارسی و کاربرپسند
+- `starlyproxy list` - لیست تمام instances
+- `starlyproxy add` - افزودن instance جدید
+- `starlyproxy start/stop/restart` - کنترل instances
+- `starlyproxy status` - نمایش وضعیت کامل
+- `starlyproxy logs` - نمایش لاگ‌ها
+- پشتیبانی از bulk operations (start all, stop all)
+
+#### 💾 مدیریت داده
+- SQLite database برای persistence
+- جدول instances - اطلاعات و وضعیت
+- جدول stats - آمار استفاده
+- جدول logs - لاگ‌های جامع
+- Auto-cleanup لاگ‌های قدیمی
+
+#### 🛠️ ابزارهای کمکی
+- `health_check.sh` - بررسی سلامت و ریستارت خودکار
+- `backup.sh` - پشتیبان‌گیری از configs و database
+- `install.sh` - نصب خودکار با یک دستور
+- systemd integration - مدیریت به عنوان سرویس
+
+### 🔧 بهبودها
+
+#### Paqet Integration
+- دانلود خودکار binary از GitHub releases
+- پشتیبانی از linux-amd64 و linux-arm64
+- ساخت خودکار config.yaml
+- مدیریت process با proper signal handling
+
+#### GFK Integration
+- یکپارچه‌سازی کامل کد موجود
+- ساخت خودکار parameters.py
+- مدیریت process group برای cleanup بهتر
+- پشتیبانی از client و server mode
+
+#### Network Detection
+- تشخیص خودکار interface
+- تشخیص خودکار local IP
+- تشخیص خودکار gateway MAC
+- fallback برای محیط‌های مختلف
+
+#### Error Handling
+- Logging جامع در تمام سطوح
+- Exception handling مناسب
+- Error messages واضح و فارسی
+- Stack traces برای debugging
+
+### 📚 مستندات
+
+- README کامل با مثال‌های کاربردی
+- API documentation جامع
+- راهنمای troubleshooting
+- مثال‌های سناریوهای واقعی
+
+### 🔄 Migration از v2.x
+
+**تغییرات breaking:**
+- ساختار فایل‌ها کاملاً تغییر کرده
+- دیگر `paqctl` مستقیم نیست - از `starlyproxy` استفاده کنید
+- configs قدیمی سازگار نیستند
+
+**نحوه migration:**
+1. Backup از تنظیمات فعلی
+2. نصب StarlyProxy v3.0
+3. افزودن دوباره instances با CLI جدید
+
+### ⚙️ تغییرات فنی
+
+#### Python Requirements
+- `netifaces>=0.11.0` - network detection
+- `psutil>=5.9.0` - process management
+- `flask>=3.0.0` - web panel
+- `scapy>=2.5.0` - GFK packet manipulation
+- `aioquic>=0.9.21` - GFK QUIC support
+- `pyyaml>=6.0` - config management
+
+#### File Structure
+```
+/opt/starlyproxy/
+├── core/                    # Core modules
+├── proxy/                   # Proxy wrappers
+│   ├── paqet/              # Paqet binaries
+│   └── gfk/                # GFK code
+├── panel/                   # Web panel
+├── cli/                     # CLI scripts
+├── instances/               # Instance data
+│   └── <name>/
+│       ├── config.yaml
+│       ├── parameters.py
+│       └── *.log
+├── config.json             # Main config
+├── starlyproxy.db          # Database
+└── venv/                   # Python venv
+```
+
+### 🐛 رفع مشکلات
+
+- رفع مشکل port collision در multi-instance
+- رفع memory leak در long-running instances
+- رفع crash در network interface changes
+- رفع مشکل zombie processes
+- رفع مشکل config validation
+
+### 🔒 امنیت
+
+- Validation ورودی‌های کاربر
+- SQL injection prevention (parameterized queries)
+- Process isolation
+- Proper signal handling
+- No hardcoded secrets
+
+### 📊 Performance
+
+- Lazy loading برای imports
+- Connection pooling برای database
+- Efficient process monitoring
+- Minimal overhead per instance
+
+---
+
+## نسخه‌های قبلی
+
+### v2.0.0
+- اضافه شدن `paqet-multi.sh`
+- پشتیبانی محدود از چند سرور
+- مستندات MULTI-SERVER.md
+
+### v1.0.0
+- نسخه اولیه بر پایه paqctl
+- پشتیبانی از Paqet و GFK
+- اسکریپت‌های ساده bash
+
+---
+
+## Roadmap v3.1
+
+### در حال برنامه‌ریزی:
+- [ ] Web UI Authentication
+- [ ] Telegram Bot برای مدیریت
+- [ ] Auto-failover بین instances
+- [ ] Traffic statistics visualization
+- [ ] Config import/export
+- [ ] Docker support
+- [ ] Android/iOS client apps
+
+---
+
+**نویسنده:** STaRly (Artin)  
+**تاریخ:** 2026-07-25  
+**لایسنس:** AGPL-3.0

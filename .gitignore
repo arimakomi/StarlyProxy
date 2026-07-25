@@ -4,26 +4,83 @@ __pycache__/
 *$py.class
 *.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 venv/
+env/
 ENV/
-.venv/
 
-# Client config (contains credentials)
-gfk/parameters.py
-
-# IDE
-.idea/
+# IDEs
 .vscode/
-.claude/
+.idea/
 *.swp
 *.swo
-
-# OS
+*~
 .DS_Store
-Thumbs.db
 
 # Logs
 *.log
+logs/
 
-# Release binaries (uploaded to GitHub releases, not committed)
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Config files with secrets
+config.local.json
+*.secret
+.env.local
+
+# Instance data (when running locally)
+instances/
+*.pid
+
+# Temp files
+tmp/
+temp/
+*.tmp
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Backup files
+*.backup
+*.bak
+backups/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# SSL/Certs
+*.pem
+*.key
+*.crt
+*.csr
+
+# Compiled binaries
+paqet
+paqet_*
 *.tar.gz
+
+# Old files
+*_OLD*
+*_BACKUP*

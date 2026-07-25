@@ -1,0 +1,19 @@
+# StarlyProxy v3.0 - systemd service template
+[Unit]
+Description=StarlyProxy Instance - %i
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/starlyproxy
+Restart=always
+RestartSec=10
+StandardOutput=append:/opt/starlyproxy/instances/%i/service.log
+StandardError=append:/opt/starlyproxy/instances/%i/service.log
+
+# This will be filled by the instance manager
+ExecStart=/opt/starlyproxy/venv/bin/python -m core.runner %i
+
+[Install]
+WantedBy=multi-user.target
