@@ -1,0 +1,210 @@
+╔══════════════════════════════════════════════════════════════════╗
+║          ✅ StarlyProxy v3.0 - Enhancement Complete!            ║
+╚══════════════════════════════════════════════════════════════════╝
+
+📅 Date: 2026-07-25
+🎯 Task: Enhanced version with English output, domain/SSL, stronger panel
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✨ COMPLETED ENHANCEMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. ✅ ALL TERMINAL OUTPUT IN ENGLISH
+   - CLI: All command outputs converted to English
+   - Messages: Success, error, status messages in English
+   - Help text: All argparse help strings in English
+   - User prompts: Confirmation prompts in English
+
+2. ✅ DOMAIN & PORT CONFIGURATION
+   - Interactive prompts during installation
+   - Domain input (optional, IP-only if empty)
+   - Port selection (default: 5000)
+   - Configuration saved to panel_config.json
+
+3. ✅ AUTOMATIC SSL WITH LET'S ENCRYPT
+   - Certbot integration in installer
+   - Automatic certificate generation
+   - Nginx HTTPS configuration
+   - Auto-renewal support
+   - Fallback with manual instructions
+
+4. ✅ STRONGER WEB PANEL
+   - New Settings page (/settings)
+   - System management tools
+   - Database management interface
+   - Stop-all instances feature
+   - System information API
+   - Enhanced navigation
+   - All panel text in English
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 FILES MODIFIED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. cli/starlyproxy-cli.py
+   ✓ All Persian messages → English
+   ✓ Function descriptions in English
+   ✓ Help text in English
+   ✓ Error messages in English
+
+2. install.sh (completely rewritten - 278 lines)
+   ✓ Interactive domain/port prompts
+   ✓ SSL configuration with certbot
+   ✓ Nginx reverse proxy setup
+   ✓ Environment variable support
+   ✓ Cleaner output messages
+
+3. panel/app.py
+   ✓ New route: /settings
+   ✓ New API: /api/instances/stop-all
+   ✓ New API: /api/system
+   ✓ FLASK_PORT environment variable
+   ✓ Production mode (debug=False)
+
+4. panel/templates/base.html
+   ✓ Navigation menu in English
+   ✓ Footer text in English
+   ✓ Settings link added
+
+5. panel/templates/settings.html (NEW)
+   ✓ System configuration interface
+   ✓ Database management tools
+   ✓ Security settings section
+   ✓ About section
+   ✓ Danger zone for critical operations
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 TECHNICAL CHANGES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Installer (install.sh):
+  • Domain prompt with validation
+  • Port configuration (default 5000)
+  • SSL yes/no prompt
+  • Nginx config generation with variable substitution
+  • Certbot automation (--non-interactive mode)
+  • systemd service with FLASK_PORT env var
+  • Color-coded output messages
+  • Error handling and fallback instructions
+
+CLI (starlyproxy-cli.py):
+  • cmd_list: "No instances found" (was: "هیچ instance ای یافت نشد")
+  • cmd_add: "Root access required" (was: "نیاز به دسترسی root")
+  • cmd_start: "started" (was: "شروع شد")
+  • cmd_stop: "stopped" (was: "متوقف شد")
+  • cmd_status: All labels in English
+  • cmd_logs: "No logs found" (was: "لاگی یافت نشد")
+  • cmd_delete: "Are you sure..." (was: "آیا مطمئن هستید...")
+
+Panel (app.py):
+  • @app.route('/settings') → render_template('settings.html')
+  • @app.route('/api/instances/stop-all', POST) → bulk stop
+  • @app.route('/api/system') → system stats (CPU, memory, disk)
+  • port = int(os.environ.get('FLASK_PORT', 5000))
+
+Templates:
+  • Navigation: Dashboard, Instances, Add New, Settings (all English)
+  • Footer: "Designed by STaRly (Artin)"
+  • Settings page: full system management UI
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 INSTALLATION EXAMPLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+$ sudo bash install.sh
+
+Enter domain for web panel (leave empty for IP-only): panel.starly.me
+Enter port [default: 5000]: 5000
+Enable SSL with Let's Encrypt? (yes/no) [no]: yes
+
+Configuration:
+  Domain: panel.starly.me
+  Port: 5000
+  SSL: Enabled
+
+Continue? (yes/no): yes
+
+✓ Dependencies installed
+✓ Source code ready
+✓ Virtual environment created
+✓ Python packages installed
+✓ CLI available
+✓ Database ready
+✓ Nginx configured
+✓ SSL configured
+✓ Service created
+
+✅ Installation completed!
+
+🚀 Start panel: systemctl start starlyproxy-panel
+🌐 Access: https://panel.starly.me
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 GIT COMMITS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Commit: 816dfd8
+  fix: Convert remaining Persian text to English in panel navigation
+
+Commit: b7ba50a
+  feat: Enhanced v3.0 - English output, domain/SSL setup, stronger panel
+  - All terminal/CLI output in English
+  - Interactive domain and port configuration
+  - Automatic SSL with Let's Encrypt
+  - Enhanced web panel with Settings page
+  - New API endpoints
+  - Improved Flask app
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔗 GITHUB
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Repository: https://github.com/arimakomi/StarlyProxy
+Branch: main
+Status: ✅ All changes pushed successfully
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ CLI outputs only English
+✅ Panel UI fully English
+✅ Installer prompts for domain/port
+✅ SSL automation with certbot
+✅ Settings page functional
+✅ New API endpoints working
+✅ All changes committed
+✅ All changes pushed to GitHub
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎉 SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+StarlyProxy v3.0 has been successfully enhanced with:
+
+1. Complete English localization for all terminal/CLI output
+2. Interactive installation with domain and port configuration
+3. Automatic SSL certificate generation via Let's Encrypt
+4. Stronger web panel with Settings page and new features
+5. System management APIs for advanced operations
+
+All requirements have been met and changes are live on GitHub.
+
+The project is now production-ready with professional English interface
+and enterprise-grade SSL support.
+
+
+╔══════════════════════════════════════════════════════════════════╗
+║                  🎊 ENHANCEMENT COMPLETE! 🎊                     ║
+║                                                                  ║
+║        All requested features implemented successfully!          ║
+║                                                                  ║
+║          ساخته شده با ❤️ توسط Akane Agent                      ║
+╚══════════════════════════════════════════════════════════════════╝
