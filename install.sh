@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# StarlyProxy v3.0 - Advanced Professional Installer
-# Complete rewrite with enhanced error handling and port selection
+# StarlyProxy v3.0 - Clean Installer
+# Simplified and fixed version
 #
 
 set -e
@@ -10,13 +10,7 @@ INSTALL_DIR="/opt/starlyproxy"
 REPO_URL="https://github.com/arimakomi/StarlyProxy.git"
 VENV_DIR="$INSTALL_DIR/venv"
 LOG_FILE="/tmp/starlyproxy-install.log"
-
-# Configuration
 DEFAULT_PORT=5000
-PANEL_DOMAIN=""
-PANEL_PORT=$DEFAULT_PORT
-ENABLE_SSL=false
-AUTO_PORT=false
 
 # Colors
 RED='\033[0;31m'
@@ -24,10 +18,8 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
-MAGENTA='\033[0;35m'
 NC='\033[0m'
 
-# Logging
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
 }
@@ -48,35 +40,20 @@ cat << "EOF"
     ███████╗   ██║   ███████║██████╔╝██║   ╚████╔╝ 
     ╚════██║   ██║   ██╔══██║██╔══██╗██║    ╚██╔╝  
     ███████║   ██║   ██║  ██║██║  ██║███████╗██║   
-    ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝   
-                                                    
-         StarlyProxy v3.0 - Proxy Manager          
-              Professional Edition                  
+    ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝
+
+         StarlyProxy v3.0 - Proxy Manager
+              Professional Edition
 
 EOF
 echo -e "${NC}"
-
-log "Installation started"
-
-# Check interactive mode
-if [ -t 0 ]; then
-    INTERACTIVE=true
-    log "Interactive mode detected"
-else
-    INTERACTIVE=false
-    log "Non-interactive mode (piped)"
-    echo -e "${YELLOW}⚠️  Non-interactive mode - using default configuration${NC}"
-    echo -e "${CYAN}   For custom setup: wget https://raw.githubusercontent.com/arimakomi/StarlyProxy/main/install.sh && sudo bash install.sh${NC}"
-    echo ""
-    sleep 2
-fi
+sleep 1
 
 # Root check
 if [ "$EUID" -ne 0 ]; then 
     error_exit "Root access required. Try: sudo bash $0"
 fi
 echo -e "${GREEN}✓ Root access confirmed${NC}"
-log "Root check passed"
 
 # Detect OS
 if [ -f /etc/os-release ]; then
@@ -91,122 +68,15 @@ echo -e "${GREEN}✓ Operating System: $OS $VER${NC}"
 echo ""
 
 # Find available port
-find_available_port() {
-    local start_port=$1
-    local port=$start_port
-    while netstat -tuln 2>/dev/null | grep -q ":$port " || ss -tuln 2>/dev/null | grep -q ":$port "; do
-        ((port++))
-        if [ $port -gt 65535 ]; then
-            return 1
-        fi
-    done
-    echo $port
-    return 0
-}
-
-# Interactive configuration
-if [ "$INTERACTIVE" = true ]; then
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BLUE}  Configuration${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
-    
-    # Client mode configuration
-    if [ "$INSTALL_MODE" = "CLIENT" ]; then
-        echo -e "${CYAN}📡 Client Mode Configuration${NC}"
-        echo ""
-        
-        DEFAULT_IP=$(hostname -I | awk '{print $1}')
-        read -p "Server IP [$DEFAULT_IP]: " SERVER_IP
-        SERVER_IP=${SERVER_IP:-$DEFAULT_IP}
-        
-        read -p "Server Port [5000]: " SERVER_PORT
-        SERVER_PORT=${SERVER_PORT:-5000}
-        
-        read -p "API Key [auto-generate]: " API_KEY
-        if [ -z "$API_KEY" ]; then
-            API_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-        fi
-        
-        echo ""
-        echo -e "${GREEN}✓ Client configuration:${NC}"
-        echo -e "  Server: ${CYAN}$SERVER_IP:$SERVER_PORT${NC}"
-        echo -e "  API Key: ${CYAN}${API_KEY:0:8}...${NC}"
-        log "Client mode configured: $SERVER_IP:$SERVER_PORT"
+PANEL_PORT=$DEFAULT_PORT
+while netstat -tuln 2>/dev/null | grep -q ":$PANEL_PORT " || ss -tuln 2>/dev/null | grep -q ":$PANEL_PORT "; do
+    ((PANEL_PORT++))
+    if [ $PANEL_PORT -gt 65535 ]; then
+        PANEL_PORT=$DEFAULT_PORT
+        break
     fi
-    
-    # Server mode configuration
-    if [ "$INSTALL_MODE" = "SERVER" ]; then
-    
-    # Domain
-    read -p "Domain for web panel [leave empty for IP-only]: " PANEL_DOMAIN
-    log "Domain: ${PANEL_DOMAIN:-IP-only}"
-    
-    # Port selection
-    echo ""
-    echo -e "${CYAN}Port Configuration:${NC}"
-    echo "  1) Use default port (5000)"
-    echo "  2) Choose custom port"
-    echo "  3) Auto-detect available port"
-    read -p "Select option [1-3, default: 1]: " port_choice
-    
-    case $port_choice in
-        2)
-            read -p "Enter custom port [1024-65535]: " custom_port
-            if [ "$custom_port" -ge 1024 ] && [ "$custom_port" -le 65535 ] 2>/dev/null; then
-                PANEL_PORT=$custom_port
-                log "Custom port selected: $PANEL_PORT"
-            else
-                echo -e "${YELLOW}⚠️  Invalid port. Using default: 5000${NC}"
-                PANEL_PORT=5000
-            fi
-            ;;
-        3)
-            echo -e "${CYAN}Searching for available port...${NC}"
-            PANEL_PORT=$(find_available_port 5000)
-            if [ $? -eq 0 ]; then
-                echo -e "${GREEN}✓ Available port found: $PANEL_PORT${NC}"
-                log "Auto-detected port: $PANEL_PORT"
-            else
-                echo -e "${YELLOW}⚠️  No available port. Using default: 5000${NC}"
-                PANEL_PORT=5000
-            fi
-            ;;
-        *)
-            PANEL_PORT=5000
-            log "Default port selected: $PANEL_PORT"
-            ;;
-    esac
-    
-    # SSL
-    if [ ! -z "$PANEL_DOMAIN" ]; then
-        echo ""
-        read -p "Enable SSL with Let's Encrypt? [yes/no]: " ssl_choice
-        if [[ "$ssl_choice" =~ ^[Yy] ]]; then
-            ENABLE_SSL=true
-            log "SSL enabled"
-        fi
-    fi
-    
-    # Summary
-    echo ""
-    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${GREEN}  Configuration Summary${NC}"
-    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    [ ! -z "$PANEL_DOMAIN" ] && echo "  Domain: ${PANEL_DOMAIN}" || echo "  Domain: IP-only"
-    echo "  Port: ${PANEL_PORT}"
-    echo "  SSL: $([ "$ENABLE_SSL" = true ] && echo 'Enabled' || echo 'Disabled')"
-    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
-    
-    read -p "Continue with installation? [yes/no]: " confirm
-    if [[ ! "$confirm" =~ ^[Yy] ]]; then
-        echo "Installation cancelled."
-        log "Installation cancelled by user"
-        exit 0
-    fi
-    echo ""
-fi
+done
+log "Selected port: $PANEL_PORT"
 
 # Start installation
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -214,373 +84,164 @@ echo -e "${BLUE}  Installation Progress${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-# [1/9] System packages
-echo -e "${CYAN}[1/9]${NC} Installing system packages..."
+# [1/7] System packages
+echo -e "${CYAN}[1/7]${NC} Installing system packages..."
 log "Step 1: Installing system packages"
 
-install_packages() {
-    local retry=0
-    local max_retries=3
-    
-    while [ $retry -lt $max_retries ]; do
-        if [[ "$OS" =~ ^(ubuntu|debian)$ ]]; then
-            export DEBIAN_FRONTEND=noninteractive
-            
-            echo -e "${CYAN}   → Updating package list...${NC}"
-            if apt-get update -qq >> "$LOG_FILE" 2>&1; then
-                echo -e "${CYAN}   → Installing packages...${NC}"
-                apt-get install -y python3 python3-pip python3-venv git nginx \
-                    build-essential python3-dev >> "$LOG_FILE" 2>&1 && \
-                apt-get install -y certbot python3-certbot-nginx >> "$LOG_FILE" 2>&1 || true
-                return 0
-            fi
-            
-        elif [[ "$OS" =~ ^(centos|rhel|rocky|almalinux)$ ]]; then
-            echo -e "${CYAN}   → Installing EPEL repository...${NC}"
-            yum install -y epel-release >> "$LOG_FILE" 2>&1 || true
-            
-            echo -e "${CYAN}   → Installing core packages...${NC}"
-            yum install -y python3 python3-pip python3-devel git gcc gcc-c++ make >> "$LOG_FILE" 2>&1 && \
-            yum install -y nginx >> "$LOG_FILE" 2>&1 || true
-            
-            echo -e "${CYAN}   → Installing certbot (optional)...${NC}"
-            yum install -y certbot python3-certbot-nginx >> "$LOG_FILE" 2>&1 || true
-            return 0
-        fi
-        
-        ((retry++))
-        if [ $retry -lt $max_retries ]; then
-            echo -e "${YELLOW}   ⚠️  Retry $retry/$max_retries...${NC}"
-            sleep 2
-        fi
-    done
-    
-    return 1
-}
-
-if install_packages; then
-    echo -e "${GREEN}✓ System packages installed${NC}"
-    log "System packages installed successfully"
+if [[ "$OS" =~ ^(ubuntu|debian)$ ]]; then
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -qq >> "$LOG_FILE" 2>&1
+    apt-get install -y python3 python3-pip python3-venv git nginx build-essential python3-dev >> "$LOG_FILE" 2>&1
+elif [[ "$OS" =~ ^(centos|rhel|rocky|almalinux)$ ]]; then
+    yum install -y epel-release >> "$LOG_FILE" 2>&1 || true
+    yum install -y python3 python3-pip python3-devel git gcc gcc-c++ make nginx >> "$LOG_FILE" 2>&1
 else
-    error_exit "Failed to install system packages after 3 retries. Check $LOG_FILE"
+    error_exit "Unsupported OS: $OS"
 fi
+echo -e "${GREEN}✓ System packages installed${NC}"
 
-# [2/9] Create directory
-echo -e "${CYAN}[2/9]${NC} Creating installation directory..."
-log "Step 2: Creating directory"
+# [2/7] Create directory
+echo -e "${CYAN}[2/7]${NC} Creating installation directory..."
 mkdir -p "$INSTALL_DIR" >> "$LOG_FILE" 2>&1 || error_exit "Failed to create directory"
 cd "$INSTALL_DIR" || error_exit "Failed to change directory"
 echo -e "${GREEN}✓ Directory: ${INSTALL_DIR}${NC}"
 
-# [3/9] Download source
-echo -e "${CYAN}[3/9]${NC} Downloading source code..."
-log "Step 3: Downloading source"
-
+# [3/7] Download source
+echo -e "${CYAN}[3/7]${NC} Downloading source code..."
 if [ -d "$INSTALL_DIR/.git" ]; then
-    echo -e "${CYAN}   → Updating existing repository...${NC}"
     git pull -q origin main >> "$LOG_FILE" 2>&1 || true
 else
-    echo -e "${CYAN}   → Cloning repository...${NC}"
-    if ! git clone -q "$REPO_URL" "$INSTALL_DIR" >> "$LOG_FILE" 2>&1; then
-        # Retry without quiet
-        git clone "$REPO_URL" "$INSTALL_DIR" >> "$LOG_FILE" 2>&1 || error_exit "Failed to clone repository"
-    fi
+    git clone -q "$REPO_URL" "$INSTALL_DIR" >> "$LOG_FILE" 2>&1 || \
+    git clone "$REPO_URL" "$INSTALL_DIR" >> "$LOG_FILE" 2>&1 || \
+    error_exit "Failed to clone repository"
 fi
 echo -e "${GREEN}✓ Source code ready${NC}"
 
-# [4/9] Python virtual environment
-echo -e "${CYAN}[4/9]${NC} Creating Python virtual environment..."
-log "Step 4: Creating virtualenv"
+# [4/7] Python virtual environment
+echo -e "${CYAN}[4/7]${NC} Creating Python virtual environment..."
 python3 -m venv "$VENV_DIR" >> "$LOG_FILE" 2>&1 || error_exit "Failed to create virtualenv"
 source "$VENV_DIR/bin/activate" || error_exit "Failed to activate virtualenv"
 echo -e "${GREEN}✓ Virtual environment created${NC}"
 
-# [5/9] Python packages - REDESIGNED with robust error handling
-echo -e "${CYAN}[5/9]${NC} Installing Python packages..."
-log "Step 5: Installing Python packages"
+# [5/7] Python packages
+echo -e "${CYAN}[5/7]${NC} Installing Python packages..."
+pip install --upgrade pip >> "$LOG_FILE" 2>&1 || true
 
-# Function to install single package with retry
-install_pip_package() {
-    local package=$1
-    local max_attempts=3
-    local attempt=1
-    
-    while [ $attempt -le $max_attempts ]; do
-        echo -e "${CYAN}   → Installing $package (attempt $attempt/$max_attempts)...${NC}"
-        log "Installing $package - attempt $attempt"
-        
-        if pip install --no-cache-dir "$package" >> "$LOG_FILE" 2>&1; then
-            echo -e "${GREEN}   ✓ $package installed${NC}"
-            log "$package installed successfully"
-            return 0
-        fi
-        
-        ((attempt++))
-        sleep 2
-    done
-    
-    log "WARNING: Failed to install $package after $max_attempts attempts"
-    return 1
-}
-
-# Upgrade pip first (critical)
-echo -e "${CYAN}   → Upgrading pip...${NC}"
-python3 -m pip install --upgrade pip >> "$LOG_FILE" 2>&1 || {
-    echo -e "${YELLOW}   ⚠️  Pip upgrade failed, using existing version${NC}"
-    log "WARNING: pip upgrade failed"
-}
-
-# Install essential packages one by one
-ESSENTIAL_PACKAGES=(
-    "setuptools"
-    "wheel" 
-    "netifaces"
-    "psutil"
-    "PyYAML"
-)
-
-for pkg in "${ESSENTIAL_PACKAGES[@]}"; do
-    if ! install_pip_package "$pkg"; then
-        error_exit "Failed to install essential package: $pkg. Check $LOG_FILE for details."
-    fi
+# Essential packages
+for pkg in netifaces psutil pyyaml; do
+    echo -e "${CYAN}   → Installing $pkg...${NC}"
+    pip install --no-cache-dir "$pkg" >> "$LOG_FILE" 2>&1 || error_exit "Failed to install $pkg"
 done
 
-# Install Flask (web framework)
-echo -e "${CYAN}   → Installing Flask web framework...${NC}"
-if ! pip install --no-cache-dir "Flask==2.3.3" >> "$LOG_FILE" 2>&1; then
-    echo -e "${YELLOW}   ⚠️  Flask 2.3.3 failed, trying older version...${NC}"
-    pip install --no-cache-dir "Flask==2.0.3" >> "$LOG_FILE" 2>&1 || error_exit "Failed to install Flask"
-fi
-echo -e "${GREEN}   ✓ Flask installed${NC}"
+# Flask
+echo -e "${CYAN}   → Installing Flask...${NC}"
+pip install --no-cache-dir "Flask==2.3.3" >> "$LOG_FILE" 2>&1 || \
+pip install --no-cache-dir "Flask==2.0.3" >> "$LOG_FILE" 2>&1 || \
+error_exit "Failed to install Flask"
 
-# Flask-CORS (optional)
-echo -e "${CYAN}   → Installing Flask-CORS...${NC}"
-pip install --no-cache-dir flask-cors >> "$LOG_FILE" 2>&1 || {
-    echo -e "${YELLOW}   ⚠️  Flask-CORS skipped (optional)${NC}"
-    log "WARNING: flask-cors install failed"
-}
+# Flask-CORS and requests
+pip install --no-cache-dir flask-cors requests >> "$LOG_FILE" 2>&1 || true
 
-# Requests for multi-server (REQUIRED for panel)
-echo -e "${CYAN}   → Installing requests library...${NC}"
-if ! install_pip_package "requests"; then
-    error_exit "Failed to install requests library (required for panel)"
-fi
-echo -e "${GREEN}   ✓ requests installed${NC}"
+echo -e "${GREEN}✓ Python packages installed${NC}"
 
-# Colorama for CLI colors (optional)
-echo -e "${CYAN}   → Installing CLI enhancements...${NC}"
-pip install --no-cache-dir colorama >> "$LOG_FILE" 2>&1 || {
-    echo -e "${YELLOW}   ⚠️  Colorama skipped (optional)${NC}"
-    log "WARNING: colorama install failed"
-}
-
-# Verify critical imports
-echo -e "${CYAN}   → Verifying installation...${NC}"
-python3 << 'VERIFY' >> "$LOG_FILE" 2>&1 || error_exit "Package verification failed"
-try:
-    import netifaces
-    import psutil
-    import yaml
-    import flask
-    import requests
-    print("✓ All critical packages verified")
-except ImportError as e:
-    print(f"✗ Import failed: {e}")
-    exit(1)
-VERIFY
-
-echo -e "${GREEN}✓ Python packages installed and verified${NC}"
-log "Python packages installation completed successfully"
-
-# [6/9] CLI setup
-echo -e "${CYAN}[6/9]${NC} Setting up CLI command..."
-log "Step 6: CLI setup"
-
-# Make scripts executable
-chmod +x "$INSTALL_DIR/cli/starlyproxy-cli.py"
-chmod +x "$INSTALL_DIR/starlyproxy-wrapper.sh"
-
-# Create symlink to wrapper (not direct to Python script)
-ln -sf "$INSTALL_DIR/starlyproxy-wrapper.sh" /usr/local/bin/starlyproxy
-
-echo -e "${GREEN}✓ CLI command: ${CYAN}starlyproxy${NC}"
-log "CLI command configured with wrapper"
-
-# [7/9] Database
-echo -e "${CYAN}[7/9]${NC} Initializing database..."
-log "Step 7: Database initialization"
-
-# Create database directory
+# [6/7] Database
+echo -e "${CYAN}[6/7]${NC} Initializing database..."
 mkdir -p "$INSTALL_DIR/data" >> "$LOG_FILE" 2>&1
-
-# Initialize database with proper PYTHONPATH
 export PYTHONPATH="$INSTALL_DIR:$PYTHONPATH"
-cd "$INSTALL_DIR"
 
-# Try to initialize database
-if python3 -c "
+# Initialize database
+python3 << 'DBINIT' >> "$LOG_FILE" 2>&1 || true
 import sys
-sys.path.insert(0, '$INSTALL_DIR')
+import sqlite3
+sys.path.insert(0, '/opt/starlyproxy')
 try:
     from core.database import DatabaseManager
     db = DatabaseManager()
-    print('Database initialized successfully')
+    print('Database initialized')
 except Exception as e:
-    print(f'Database init failed: {e}')
-    # Create empty database file as fallback
-    import sqlite3
-    conn = sqlite3.connect('$INSTALL_DIR/instances.db')
+    conn = sqlite3.connect('/opt/starlyproxy/instances.db')
     conn.execute('CREATE TABLE IF NOT EXISTS instances (id INTEGER PRIMARY KEY, name TEXT UNIQUE, config TEXT)')
     conn.commit()
     conn.close()
-    print('Database created with fallback method')
-" >> "$LOG_FILE" 2>&1; then
-    echo -e "${GREEN}✓ Database initialized${NC}"
-    log "Database initialized successfully"
-else
-    echo -e "${YELLOW}⚠️  Database initialization had issues, but continuing...${NC}"
-    log "WARNING: Database initialization partial"
-fi
+    print('Database created (fallback)')
+DBINIT
 
-# Save configuration
-cat > "$INSTALL_DIR/panel_config.json" << CONF
-{
-    "domain": "${PANEL_DOMAIN}",
-    "port": ${PANEL_PORT},
-    "ssl_enabled": ${ENABLE_SSL},
-    "auto_port": ${AUTO_PORT},
-    "installed_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-}
-CONF
-log "Configuration saved"
+echo -e "${GREEN}✓ Database initialized${NC}"
 
-# [8/9] Web server
-echo -e "${CYAN}[8/9]${NC} Configuring web server..."
-log "Step 8: Web server configuration"
+# [7/7] Web panel service
+echo -e "${CYAN}[7/7]${NC} Configuring web panel..."
 
-if [ ! -z "$PANEL_DOMAIN" ]; then
-    echo -e "${CYAN}   → Creating Nginx configuration...${NC}"
-    cat > /etc/nginx/conf.d/starlyproxy.conf << 'NGINX'
-server {
-    listen 80;
-    server_name DOMAIN_PLACEHOLDER;
-    
-    location / {
-        proxy_pass http://127.0.0.1:PORT_PLACEHOLDER;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-    }
-}
-NGINX
-    
-    sed -i "s/DOMAIN_PLACEHOLDER/${PANEL_DOMAIN}/g" /etc/nginx/conf.d/starlyproxy.conf
-    sed -i "s/PORT_PLACEHOLDER/${PANEL_PORT}/g" /etc/nginx/conf.d/starlyproxy.conf
-    
-    if nginx -t >> "$LOG_FILE" 2>&1; then
-        systemctl enable nginx >> "$LOG_FILE" 2>&1 || true
-        systemctl restart nginx >> "$LOG_FILE" 2>&1
-        echo -e "${GREEN}   ✓ Nginx configured for: ${PANEL_DOMAIN}${NC}"
-        log "Nginx configured successfully"
-    else
-        echo -e "${YELLOW}   ⚠️  Nginx configuration test failed${NC}"
-        log "WARNING: Nginx test failed"
-    fi
-    
-    if [ "$ENABLE_SSL" = true ] && command -v certbot >/dev/null; then
-        echo -e "${CYAN}   → Obtaining SSL certificate...${NC}"
-        if certbot --nginx -d "${PANEL_DOMAIN}" --non-interactive --agree-tos \
-            --register-unsafely-without-email --redirect >> "$LOG_FILE" 2>&1; then
-            echo -e "${GREEN}   ✓ SSL certificate obtained${NC}"
-            log "SSL certificate obtained"
-        else
-            echo -e "${YELLOW}   ⚠️  SSL failed. Manual: sudo certbot --nginx -d ${PANEL_DOMAIN}${NC}"
-            log "WARNING: SSL certificate failed"
-        fi
-    fi
-else
-    echo -e "${GREEN}✓ IP-only mode (no domain configuration)${NC}"
-    log "IP-only mode selected"
-fi
-
-# [9/9] Systemd service
-echo -e "${CYAN}[9/9]${NC} Creating systemd service..."
-log "Step 9: Systemd service"
-
-cat > /etc/systemd/system/starlyproxy-panel.service << SERVICE
+# Create systemd service
+cat > /etc/systemd/system/starlyproxy-panel.service << SERVEOF
 [Unit]
 Description=StarlyProxy Web Panel
-Documentation=https://github.com/arimakomi/StarlyProxy
 After=network.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=$INSTALL_DIR/panel
+WorkingDirectory=$INSTALL_DIR
 Environment="PATH=$VENV_DIR/bin"
-Environment="FLASK_PORT=${PANEL_PORT}"
-Environment="PYTHONUNBUFFERED=1"
-ExecStart=$VENV_DIR/bin/python app.py
+Environment="PYTHONPATH=$INSTALL_DIR"
+ExecStart=$VENV_DIR/bin/python3 $INSTALL_DIR/panel/app.py
 Restart=always
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
+RestartSec=3
 
 [Install]
 WantedBy=multi-user.target
-SERVICE
+SERVEOF
 
-systemctl daemon-reload >> "$LOG_FILE" 2>&1
-systemctl enable starlyproxy-panel >> "$LOG_FILE" 2>&1 || true
-echo -e "${GREEN}✓ Service created and enabled${NC}"
-log "Service created successfully"
+systemctl daemon-reload
+systemctl enable starlyproxy-panel >> "$LOG_FILE" 2>&1
+systemctl start starlyproxy-panel >> "$LOG_FILE" 2>&1
 
-# Final banner
-echo ""
-echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}   ✅ Installation Completed Successfully!${NC}"
-echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
-echo ""
+# Wait for service
+sleep 3
 
-# Access information
-echo -e "${YELLOW}🚀 Start Panel:${NC}"
-echo -e "   systemctl start starlyproxy-panel"
-echo -e "   systemctl status starlyproxy-panel"
-echo ""
-
-echo -e "${CYAN}🌐 Access Panel:${NC}"
-if [ ! -z "$PANEL_DOMAIN" ]; then
-    if [ "$ENABLE_SSL" = true ]; then
-        echo -e "   ${GREEN}https://${PANEL_DOMAIN}${NC}"
-    else
-        echo -e "   ${GREEN}http://${PANEL_DOMAIN}${NC}"
-    fi
+if systemctl is-active --quiet starlyproxy-panel; then
+    echo -e "${GREEN}✓ Web panel started${NC}"
 else
-    SERVER_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
-    if [ ! -z "$SERVER_IP" ]; then
-        echo -e "   ${GREEN}http://${SERVER_IP}:${PANEL_PORT}${NC}"
-    else
-        echo -e "   ${GREEN}http://YOUR_SERVER_IP:${PANEL_PORT}${NC}"
-    fi
+    echo -e "${YELLOW}⚠️  Service may need manual start${NC}"
+fi
+
+# CLI tool
+cat > /usr/local/bin/starlyproxy << 'CLIEOF'
+#!/bin/bash
+VENV="/opt/starlyproxy/venv"
+source "$VENV/bin/activate"
+export PYTHONPATH="/opt/starlyproxy:$PYTHONPATH"
+cd /opt/starlyproxy
+python3 -m cli "$@"
+CLIEOF
+
+chmod +x /usr/local/bin/starlyproxy
+
+echo ""
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${BLUE}  Installation Complete!${NC}"
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+echo -e "${GREEN}✓ StarlyProxy v3.0 installed successfully${NC}"
+echo ""
+echo -e "${CYAN}🌐 Access Panel:${NC}"
+SERVER_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+if [ ! -z "$SERVER_IP" ]; then
+    echo -e "   ${GREEN}http://${SERVER_IP}:${PANEL_PORT}${NC}"
+else
+    echo -e "   ${GREEN}http://YOUR_SERVER_IP:${PANEL_PORT}${NC}"
+fi
+echo -e "   Default login: ${YELLOW}admin / admin${NC}"
+echo ""
+echo -e "${CYAN}🎯 Xray Dashboard:${NC}"
+if [ ! -z "$SERVER_IP" ]; then
+    echo -e "   ${GREEN}http://${SERVER_IP}:${PANEL_PORT}/xray${NC}"
 fi
 echo ""
-
 echo -e "${YELLOW}📖 CLI Commands:${NC}"
 echo -e "   ${CYAN}starlyproxy list${NC}              - List all instances"
 echo -e "   ${CYAN}starlyproxy add ...${NC}           - Add new instance"
-echo -e "   ${CYAN}starlyproxy start <name>${NC}     - Start instance"
-echo -e "   ${CYAN}starlyproxy status <name>${NC}    - Check status"
+echo -e "   ${CYAN}systemctl status starlyproxy-panel${NC} - Check service"
 echo ""
-
 echo -e "${MAGENTA}📋 Installation log: ${LOG_FILE}${NC}"
 echo ""
 echo -e "${BLUE}🎉 Enjoy StarlyProxy!${NC}"
