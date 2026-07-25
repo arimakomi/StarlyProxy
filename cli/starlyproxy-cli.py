@@ -302,6 +302,10 @@ def main():
     parser_logs.add_argument('-n', '--lines', type=int, default=50, help='Number of lines')
     parser_logs.set_defaults(func=cmd_logs)
     
+    # update command
+    parser_update = subparsers.add_parser('update', help='Update StarlyProxy to latest version')
+    parser_update.set_defaults(func=cmd_update)
+    
     args = parser.parse_args()
     
     if not args.command:
