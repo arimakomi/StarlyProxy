@@ -1,0 +1,137 @@
+{% extends "base_v3.html" %}
+
+{% block title %}Users — StarlyProxy{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1 class="page-title">User Management</h1>
+        <p class="page-subtitle">Manage panel users and permissions</p>
+    </div>
+    <button onclick="showAddUser()" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add User
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-body" style="padding: 0;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="users-table">
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 24px;">
+                        <i class="bi bi-hourglass-split"></i> Loading...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function loadUsers() {
+    axios.get('/api/users/list')
+        .then(response => {
+            const users = response.data.users || [];
+            const tbody = document.getElementById('users-table');
+            
+            if (users.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 24px; color: var(--text-secondary);">
+                            No users found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td style="font-weight: 500;">${user.username}</td>
+                    <td>
+                        <span class="badge ${user.role === 'admin' ? 'badge-warning' : 'badge-success'}">
+                            ${user.role}
+                        </span>
+                    </td>
+                    <td style="color: var(--text-secondary);">${user.created || 'N/A'}</td>
+                    <td>
+                        <button onclick="changePassword('${user.username}')" class="btn btn-secondary btn-sm">
+                            <i class="bi bi-key"></i>
+                        </button>
+                        ${user.username !== 'admin' ? `
+                            <button onclick="deleteUser('${user.username}')" class="btn btn-secondary btn-sm" style="color: var(--danger);">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        ` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        })
+        .catch(error => {
+            document.getElementById('users-table').innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 24px; color: var(--danger);">
+                        Error loading users: ${error.message}
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+function showAddUser() {
+    const username = prompt('Username:');
+    if (!username) return;
+    
+    const password = prompt('Password:');
+    if (!password) return;
+    
+    const role = prompt('Role (admin/user):', 'user');
+    if (!role) return;
+    
+    axios.post('/api/users/add', { username, password, role })
+        .then(response => {
+            alert('User created!');
+            loadUsers();
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+function changePassword(username) {
+    const password = prompt('New password for ' + username + ':');
+    if (!password) return;
+    
+    axios.post('/api/users/change-password', { username, password })
+        .then(response => {
+            alert('Password changed!');
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+function deleteUser(username) {
+    if (!confirm('Delete user "' + username + '"?')) return;
+    
+    axios.delete('/api/users/delete', { data: { username } })
+        .then(response => {
+            alert('User deleted');
+            loadUsers();
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+loadUsers();
+</script>
+{% endblock %}

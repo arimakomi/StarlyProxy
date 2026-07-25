@@ -181,7 +181,7 @@ def settings_page():
 def backups_page():
     """Backup management page"""
     backups = backup_mgr.list_backups()
-    return render_template('backups.html', backups=backups)
+    return render_template('backups_v3.html', backups=backups)
 
 
 @app.route('/metrics')
@@ -189,15 +189,15 @@ def backups_page():
 def metrics_page():
     """Metrics and monitoring page"""
     system_metrics = metrics_mgr.collect_system_metrics()
-    return render_template('metrics.html', metrics=system_metrics)
+    return render_template('metrics_v3.html', metrics=system_metrics)
 
 
 @app.route('/servers')
 @login_required
 def servers_page():
     """Multi-server management page"""
-    servers = multiserver_mgr.get_all_servers_status()
-    return render_template('servers.html', servers=servers)
+    servers = multiserver_mgr.list_servers()
+    return render_template('servers_v3.html', servers=servers)
 
 
 @app.route('/users')

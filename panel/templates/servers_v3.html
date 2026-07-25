@@ -1,0 +1,103 @@
+{% extends "base_v3.html" %}
+
+{% block title %}Multi-Server — StarlyProxy{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1 class="page-title">Multi-Server Management</h1>
+        <p class="page-subtitle">Manage multiple StarlyProxy servers</p>
+    </div>
+    <button onclick="showAddServer()" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add Server
+    </button>
+</div>
+
+{% if servers %}
+<div class="card">
+    <div class="card-body" style="padding: 0;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Host</th>
+                    <th>Port</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for server in servers %}
+                <tr>
+                    <td style="font-weight: 500;">{{ server.name }}</td>
+                    <td style="font-family: monospace; font-size: 13px;">{{ server.host }}</td>
+                    <td style="color: var(--text-secondary);">{{ server.port }}</td>
+                    <td>
+                        <span class="badge badge-success">
+                            <span class="badge-dot"></span> Online
+                        </span>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 4px;">
+                            <a href="http://{{ server.host }}:{{ server.port }}" target="_blank" class="btn btn-secondary btn-sm">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                            </a>
+                            <button onclick="removeServer('{{ server.name }}')" class="btn btn-secondary btn-sm" style="color: var(--danger);">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body" style="padding: 48px; text-align: center;">
+        <i class="bi bi-hdd-network" style="font-size: 64px; color: var(--text-tertiary); display: block; margin-bottom: 16px;"></i>
+        <h3 style="font-size: 20px; margin-bottom: 8px;">No Remote Servers</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 24px;">Add a remote server to manage multiple instances</p>
+        <button onclick="showAddServer()" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add First Server
+        </button>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function showAddServer() {
+    const name = prompt('Server name:');
+    if (!name) return;
+    
+    const host = prompt('Server host (IP):');
+    if (!host) return;
+    
+    const port = prompt('Server port:', '5000');
+    if (!port) return;
+    
+    axios.post('/api/servers/add', { name, host, port: parseInt(port) })
+        .then(response => {
+            alert('Server added!');
+            location.reload();
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+function removeServer(name) {
+    if (!confirm('Remove server "' + name + '"?')) return;
+    
+    axios.delete('/api/servers/remove', { data: { name } })
+        .then(response => {
+            alert('Server removed');
+            location.reload();
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends "base_v3.html" %}
+
+{% block title %}Backups — StarlyProxy{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1 class="page-title">Backups</h1>
+        <p class="page-subtitle">Backup and restore your configuration</p>
+    </div>
+    <button onclick="createBackup()" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Create Backup
+    </button>
+</div>
+
+{% if backups %}
+<div class="card">
+    <div class="card-body" style="padding: 0;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Size</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for backup in backups %}
+                <tr>
+                    <td style="font-family: monospace; font-size: 13px;">{{ backup.name }}</td>
+                    <td style="color: var(--text-secondary);">{{ backup.size }}</td>
+                    <td style="color: var(--text-secondary);">{{ backup.created }}</td>
+                    <td>
+                        <div style="display: flex; gap: 4px;">
+                            <button onclick="restoreBackup('{{ backup.name }}')" class="btn btn-primary btn-sm">
+                                <i class="bi bi-arrow-clockwise"></i> Restore
+                            </button>
+                            <button onclick="downloadBackup('{{ backup.name }}')" class="btn btn-secondary btn-sm">
+                                <i class="bi bi-download"></i>
+                            </button>
+                            <button onclick="deleteBackup('{{ backup.name }}')" class="btn btn-secondary btn-sm" style="color: var(--danger);">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body" style="padding: 48px; text-align: center;">
+        <i class="bi bi-archive" style="font-size: 64px; color: var(--text-tertiary); display: block; margin-bottom: 16px;"></i>
+        <h3 style="font-size: 20px; margin-bottom: 8px;">No Backups</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 24px;">Create your first backup to get started</p>
+        <button onclick="createBackup()" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create First Backup
+        </button>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function createBackup() {
+    if (!confirm('Create backup now?')) return;
+    
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Creating...';
+    
+    axios.post('/api/backups/create')
+        .then(response => {
+            alert('Backup created successfully!');
+            location.reload();
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-plus-circle"></i> Create Backup';
+        });
+}
+
+function restoreBackup(name) {
+    if (!confirm('Restore backup "' + name + '"? This will stop all instances and restore configuration.')) return;
+    
+    axios.post('/api/backups/restore', { filename: name })
+        .then(response => {
+            alert('Backup restored successfully!');
+            location.reload();
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+function downloadBackup(name) {
+    window.location.href = '/api/backups/download?filename=' + name;
+}
+
+function deleteBackup(name) {
+    if (!confirm('Delete backup "' + name + '"? This cannot be undone!')) return;
+    
+    axios.delete('/api/backups/delete', { data: { filename: name } })
+        .then(response => {
+            alert('Backup deleted');
+            location.reload();
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base_v3.html" %}
+
+{% block title %}Metrics — StarlyProxy{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">System Metrics</h1>
+    <p class="page-subtitle">Real-time system monitoring</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">CPU Usage</div>
+        <div class="stat-value" id="cpu-usage">--</div>
+        <div class="stat-change">{{ metrics.cpu_count or 0 }} cores</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-label">Memory</div>
+        <div class="stat-value" id="memory-usage">--</div>
+        <div class="stat-change">{{ metrics.memory_total or 0 }} GB total</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-label">Disk Usage</div>
+        <div class="stat-value" id="disk-usage">--</div>
+        <div class="stat-change">Available</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-label">Network</div>
+        <div class="stat-value" id="network-usage">--</div>
+        <div class="stat-change">Combined</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span><i class="bi bi-activity"></i> Live System Monitor</span>
+        <span style="color: var(--success); font-size: 12px;">
+            <span class="badge-dot" style="background: var(--success); width: 8px; height: 8px; display: inline-block; border-radius: 50%;"></span>
+            Live
+        </span>
+    </div>
+    <div class="card-body">
+        <p style="color: var(--text-secondary); text-align: center; padding: 48px;">
+            Real-time metrics visualization will be displayed here
+        </p>
+    </div>
+</div>
+
+<script>
+function updateMetrics() {
+    axios.get('/api/metrics/system')
+        .then(response => {
+            const data = response.data.metrics || {};
+            
+            document.getElementById('cpu-usage').textContent = 
+                (data.cpu_percent || 0).toFixed(1) + '%';
+            
+            document.getElementById('memory-usage').textContent = 
+                (data.memory_percent || 0).toFixed(1) + '%';
+            
+            document.getElementById('disk-usage').textContent = 
+                (data.disk_percent || 0).toFixed(1) + '%';
+            
+            document.getElementById('network-usage').textContent = 
+                ((data.network_sent || 0) + (data.network_recv || 0)).toFixed(1) + ' MB';
+        })
+        .catch(error => {
+            console.error('Error fetching metrics:', error);
+        });
+}
+
+// Update every 5 seconds
+setInterval(updateMetrics, 5000);
+updateMetrics();
+</script>
+{% endblock %}
