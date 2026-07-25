@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # ╔═══════════════════════════════════════════════════════════════════╗
-# ║      PAQCTL - Paqet Manager v1.1.0                                ║
+# ║      STARLYPROXY - Paqet Manager v1.1.0                                ║
 # ║                                                                   ║
 # ║  One-click setup for Paqet raw-socket proxy                       ║
 # ║                                                                   ║
@@ -66,7 +66,7 @@ NC='\033[0m'
 print_header() {
     echo -e "${CYAN}"
     echo "╔════════════════════════════════════════════════════════════════╗"
-    echo "║                  PAQCTL - Paqet Manager v${VERSION}                   ║"
+    echo "║                  STARLYPROXY - Paqet Manager v${VERSION}                   ║"
     echo "║        Raw-socket encrypted proxy - bypass firewalls           ║"
     echo "╚════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
@@ -590,7 +590,7 @@ detect_network() {
 run_config_wizard() {
     echo ""
     echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
-    echo -e "${BOLD}  PAQCTL CONFIGURATION WIZARD${NC}"
+    echo -e "${BOLD}  STARLYPROXY CONFIGURATION WIZARD${NC}"
     echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
     echo ""
 
@@ -2645,7 +2645,7 @@ _safe_update_setting() {
 print_header() {
     echo -e "${CYAN}"
     echo "╔════════════════════════════════════════════════════════════════╗"
-    echo "║                  PAQCTL - Paqet Manager v${VERSION}                   ║"
+    echo "║                  STARLYPROXY - Paqet Manager v${VERSION}                   ║"
     echo "║        Raw-socket encrypted proxy - bypass firewalls           ║"
     echo "╚════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
@@ -4275,7 +4275,7 @@ _persist_firewall() {
 show_status() {
     echo ""
     echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
-    echo -e "${BOLD}  PAQCTL STATUS (${BACKEND})${NC}"
+    echo -e "${BOLD}  STARLYPROXY STATUS (${BACKEND})${NC}"
     echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
     echo ""
 
@@ -7447,7 +7447,7 @@ _install_gfk_components() {
 
 uninstall_paqctl() {
     echo ""
-    echo -e "${RED}${BOLD}  UNINSTALL PAQCTL${NC}"
+    echo -e "${RED}${BOLD}  UNINSTALL STARLYPROXY${NC}"
     echo ""
     echo -e "  This will remove:"
     if [ "$BACKEND" = "gfw-knocker" ]; then

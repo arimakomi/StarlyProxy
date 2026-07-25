@@ -1,15 +1,15 @@
 #!/bin/bash
 #
 # ╔═══════════════════════════════════════════════════════════════════╗
-# ║  PAQET-MULTI - Multi-Server Manager for paqet clients               ║
+# ║  StarlyProxy — Multi-Server Manager                                 ║
 # ║  v2.0.0                                                             ║
 # ║                                                                     ║
 # ║  Add, remove, start, stop, edit, and monitor as many paqet client   ║
 # ║  connections as you want, each to a different server, each with     ║
 # ║  its own local SOCKS5 port and its own systemd service.             ║
 # ║                                                                     ║
-# ║  Works alongside the official paqctl.sh installer/binary:           ║
-# ║  https://github.com/SamNet-dev/paqctl                               ║
+# ║  Part of StarlyProxy, built on the paqctl engine:                   ║
+# ║  https://github.com/arimakomi/StarlyProxy                           ║
 # ╚═══════════════════════════════════════════════════════════════════╝
 #
 # Usage (interactive menu):
@@ -439,7 +439,7 @@ main_menu() {
     while true; do
         echo ""
         echo -e "${CYAN}═══════════════════════════════════════════${NC}"
-        echo -e "${BOLD}  PAQET MULTI-SERVER MANAGER v2.0.0${NC}"
+        echo -e "${BOLD}  STARLYPROXY MULTI-SERVER MANAGER v2.0.0${NC}"
         echo -e "${CYAN}═══════════════════════════════════════════${NC}"
         list_servers
         echo ""

@@ -1,4 +1,4 @@
-# Paqet Multi-Server Manager
+# StarlyProxy Multi-Server Manager
 
 A companion script for [paqctl](https://github.com/SamNet-dev/paqctl) that lets you run **as many simultaneous paqet client connections as you want**, each to a different server, each with its own local SOCKS5 port and its own independent systemd service.
 
@@ -20,7 +20,7 @@ A companion script for [paqctl](https://github.com/SamNet-dev/paqctl) that lets 
 ## Install
 
 ```bash
-curl -sLO https://raw.githubusercontent.com/arimakomi/paqctl/main/paqet-multi.sh
+curl -sLO https://raw.githubusercontent.com/arimakomi/StarlyProxy/main/paqet-multi.sh
 chmod +x paqet-multi.sh
 sudo ./paqet-multi.sh
 ```
@@ -152,7 +152,7 @@ This stops and disables the service, and deletes both the config and the unit fi
 ## نصب
 
 ```bash
-curl -sLO https://raw.githubusercontent.com/arimakomi/paqctl/main/paqet-multi.sh
+curl -sLO https://raw.githubusercontent.com/arimakomi/StarlyProxy/main/paqet-multi.sh
 chmod +x paqet-multi.sh
 sudo ./paqet-multi.sh
 ```
