@@ -24,7 +24,7 @@ try:
     from core import InstanceManager, ConfigManager
     from core.auth import AuthManager
     from core.backup import BackupManager
-    from core.metrics import MetricsManager
+    from core.metrics import MetricsCollector
     from core.multiserver import MultiServerManager
     from core.xray import XrayManager, InboundManager, OutboundManager, UserManager
     from core.utils import get_system_info
@@ -42,7 +42,7 @@ mgr = InstanceManager()
 config_mgr = ConfigManager()
 auth_mgr = AuthManager()
 backup_mgr = BackupManager()
-metrics_mgr = MetricsManager()
+metrics_mgr = MetricsCollector()
 multiserver_mgr = MultiServerManager()
 xray_mgr = XrayManager()
 xray_inbound_mgr = InboundManager()

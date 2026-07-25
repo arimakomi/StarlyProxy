@@ -1,16 +1,16 @@
 """
-Xray Process Manager
-Handles Xray-core process lifecycle and monitoring
+Xray Core Manager
+Handles Xray-core process lifecycle and configuration management
 """
 
 import subprocess
+import json
 import os
-import signal
-import psutil
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Optional, Dict, Any, List, Tuple
 
 
+class XrayManager:
 class XrayManager:
     """Manage Xray-core process"""
     
@@ -180,7 +180,7 @@ class XrayManager:
         except Exception:
             return []
     
-    def test_config(self) -> tuple[bool, str]:
+    def test_config(self) -> Tuple[bool, str]:
         """Test Xray configuration"""
         if not self.config_file.exists():
             return False, "Configuration file not found"
