@@ -1,8 +1,30 @@
-{% extends "base.html" %}
+{% extends "base_v3.html" %}
 
-{% block title %}Settings - StarlyProxy{% endblock %}
+{% block title %}Settings — StarlyProxy{% endblock %}
 
 {% block content %}
+<div class="page-header">
+    <h1 class="page-title">Settings</h1>
+    <p class="page-subtitle">System configuration and updates</p>
+</div>
+
+<!-- Update Section -->
+<div class="card" style="margin-bottom: var(--space-md);">
+    <div class="card-header">
+        <span><i class="bi bi-arrow-clockwise"></i> System Updates</span>
+    </div>
+    <div class="card-body">
+        <div id="update-status" style="margin-bottom: var(--space-md);">
+            <p style="color: var(--text-secondary);">Check for the latest version of StarlyProxy</p>
+        </div>
+        <button id="check-update-btn" class="btn btn-primary" onclick="checkForUpdates()">
+            <i class="bi bi-search"></i> Check for Updates
+        </button>
+        <button id="update-btn" class="btn btn-secondary" onclick="performUpdate()" style="display: none;">
+            <i class="bi bi-download"></i> Update Now
+        </button>
+    </div>
+</div>
 <div class="row">
     <div class="col-12">
         <h2 class="mb-4"><i class="bi bi-gear"></i> Settings</h2>
@@ -187,11 +209,57 @@ function stopAllInstances() {
             location.reload();
         })
         .catch(error => {
-            alert('Error: ' + (error.response?.data?.error || error.message));
+            alert('Error: ' + (error.response?.data?.message || error.message));
         });
 }
 
-function resetDatabase() {
+// Update functions
+function checkForUpdates() {
+    const btn = document.getElementById('check-update-btn');
+    const status = document.getElementById('update-status');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Checking...';
+    
+    axios.get('/api/system/check-updates')
+        .then(response => {
+            if (response.data.update_available) {
+                status.innerHTML = '<div class="alert alert-success">✅ New version available</div>';
+                document.getElementById('update-btn').style.display = 'inline-flex';
+            } else {
+                status.innerHTML = '<div class="alert alert-success">✅ Latest version</div>';
+            }
+        })
+        .catch(error => {
+            status.innerHTML = '<div class="alert alert-danger">❌ Check failed</div>';
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-search"></i> Check for Updates';
+        });
+}
+
+function performUpdate() {
+    if (!confirm('Update and restart panel?')) return;
+    
+    const btn = document.getElementById('update-btn');
+    const status = document.getElementById('update-status');
+    
+    btn.disabled = true;
+    status.innerHTML = '<div class="alert alert-warning">⏳ Updating...</div>';
+    
+    axios.post('/api/system/update')
+        .then(response => {
+            status.innerHTML = '<div class="alert alert-success">✅ Complete! Refreshing...</div>';
+            setTimeout(() => location.reload(), 3000);
+        })
+        .catch(error => {
+            status.innerHTML = '<div class="alert alert-danger">❌ Update failed</div>';
+            btn.disabled = false;
+        });
+}
+</script>
+{% endblock %}
     alert('Database reset is disabled for safety');
 }
 </script>
