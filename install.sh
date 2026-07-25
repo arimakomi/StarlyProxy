@@ -215,7 +215,7 @@ cat > /usr/local/bin/starlyproxy << 'CLIEOF'
 #!/bin/bash
 VENV="/opt/starlyproxy/venv"
 source "$VENV/bin/activate"
-export PYTHONPATH="/opt/starlyproxy:$PYTHONPATH"
+export PYTHONPATH="/opt/starlyproxy:${PYTHONPATH:-}"
 cd /opt/starlyproxy
 python3 -m cli "$@"
 CLIEOF
