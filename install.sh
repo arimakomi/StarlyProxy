@@ -42,18 +42,19 @@ error_exit() {
 clear 2>/dev/null || true
 echo -e "${BLUE}"
 cat << "EOF"
-   _____ _             _         ____                       
-  / ____| |           | |       |  _ \                      
- | (___ | |_ __ _ _ __| |_   _  | |_) | __ _ __  _ __ __ __ 
-  \___ \| __/ _` | '__| | | | | |  _ < / _` |\ \/ / '__|\/ /
-  ____) | || (_| | |  | | |_| | | |_) | (_| | >  <| |    >  < 
- |_____/ \__\__,_|_|  |_|\__, | |____/ \__,_|/_/\_\_|   /_/\_\
-                          __/ |
-                         |___/
-    
-    StarlyProxy v3.0 - Advanced Multi-Instance Proxy Manager
-    Professional GFW-Knocker & Paqet Management System
-    
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║              ███████╗████████╗ █████╗ ██████╗ ██╗  ██╗      ║
+║              ██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██║  ██║      ║
+║              ███████╗   ██║   ███████║██████╔╝██║  ██║      ║
+║              ╚════██║   ██║   ██╔══██║██╔══██╗██║  ██║      ║
+║              ███████║   ██║   ██║  ██║██║  ██║███████║      ║
+║              ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝      ║
+║                                                              ║
+║                    StarlyProxy v3.0                          ║
+║          Multi-Instance Proxy Management System              ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
 EOF
 echo -e "${NC}"
 
@@ -273,10 +274,25 @@ echo -e "${GREEN}✓ Virtual environment created${NC}"
 echo -e "${CYAN}[5/9]${NC} Installing Python packages..."
 log "Step 5: Installing Python packages"
 echo -e "${CYAN}   → Upgrading pip...${NC}"
-pip install -q --upgrade pip setuptools wheel >> "$LOG_FILE" 2>&1 || error_exit "Failed to upgrade pip"
-echo -e "${CYAN}   → Installing dependencies...${NC}"
-pip install -q -r requirements.txt >> "$LOG_FILE" 2>&1 || error_exit "Failed to install Python packages"
+pip install --upgrade pip setuptools wheel >> "$LOG_FILE" 2>&1 || {
+    echo -e "${YELLOW}   ⚠️  Pip upgrade failed, continuing...${NC}"
+    log "WARNING: pip upgrade failed"
+}
+
+echo -e "${CYAN}   → Installing core dependencies...${NC}"
+pip install netifaces psutil pyyaml >> "$LOG_FILE" 2>&1 || error_exit "Failed to install core packages"
+
+echo -e "${CYAN}   → Installing web framework...${NC}"
+pip install "flask>=2.3.0" flask-cors >> "$LOG_FILE" 2>&1 || error_exit "Failed to install Flask"
+
+echo -e "${CYAN}   → Installing optional packages...${NC}"
+pip install colorama >> "$LOG_FILE" 2>&1 || {
+    echo -e "${YELLOW}   ⚠️  Optional packages skipped${NC}"
+    log "WARNING: colorama install failed"
+}
+
 echo -e "${GREEN}✓ Python packages installed${NC}"
+log "Python packages installed successfully"
 
 # [6/9] CLI setup
 echo -e "${CYAN}[6/9]${NC} Setting up CLI command..."
