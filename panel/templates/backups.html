@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Backup Management</h2>
+            <p class="text-muted">Create and restore backups of your configuration and database</p>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Create New Backup</h5>
+                </div>
+                <div class="card-body">
+                    <form id="createBackupForm">
+                        <div class="mb-3">
+                            <label for="backupName" class="form-label">Backup Name (optional)</label>
+                            <input type="text" class="form-control" id="backupName" placeholder="Leave empty for auto-generated name">
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-archive"></i> Create Backup
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Backup Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Total Backups:</strong> <span id="totalBackups">{{ backups|length }}</span></p>
+                    <p><strong>Latest Backup:</strong> <span id="latestBackup">
+                        {% if backups %}
+                            {{ backups[0].created_at }}
+                        {% else %}
+                            None
+                        {% endif %}
+                    </span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Available Backups</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Created At</th>
+                                    <th>Size</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="backupsTable">
+                                {% for backup in backups %}
+                                <tr>
+                                    <td>{{ backup.name }}</td>
+                                    <td>{{ backup.created_at }}</td>
+                                    <td>{{ (backup.size_bytes / 1024 / 1024)|round(2) }} MB</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success" onclick="restoreBackup('{{ backup.name }}')">
+                                            <i class="bi bi-arrow-clockwise"></i> Restore
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteBackup('{{ backup.name }}')">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No backups available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('createBackupForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const name = document.getElementById('backupName').value;
+    
+    fetch('/api/backups/create', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name: name || null})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            alert('Backup created successfully!');
+            location.reload();
+        } else {
+            alert('Failed to create backup');
+        }
+    });
+});
+
+function restoreBackup(name) {
+    if(!confirm('Are you sure? This will overwrite current configuration.')) return;
+    
+    fetch('/api/backups/restore', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name: name})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            alert('Backup restored successfully!');
+            location.reload();
+        } else {
+            alert('Failed to restore backup');
+        }
+    });
+}
+
+function deleteBackup(name) {
+    if(!confirm('Delete this backup?')) return;
+    
+    fetch('/api/backups/delete/' + name, {method: 'DELETE'})
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            location.reload();
+        } else {
+            alert('Failed to delete backup');
+        }
+    });
+}
+</script>
+{% endblock %}

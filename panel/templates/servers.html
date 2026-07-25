@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Multi-Server Management</h2>
+            <p class="text-muted">Manage multiple StarlyProxy servers from one dashboard</p>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Add Server</h5>
+                </div>
+                <div class="card-body">
+                    <form id="addServerForm">
+                        <div class="mb-3">
+                            <label class="form-label">Server Name</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Host/IP</label>
+                            <input type="text" class="form-control" name="host" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Port</label>
+                            <input type="number" class="form-control" name="port" value="5000">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Server</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Connected Servers</h5>
+                </div>
+                <div class="card-body">
+                    {% for name, data in servers.items() %}
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">{{ name }}</h6>
+                            <span class="badge bg-{{ 'success' if data.health.status == 'online' else 'danger' }}">
+                                {{ data.health.status }}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Host:</strong> {{ data.config.host }}:{{ data.config.port }}</p>
+                            <p><strong>Instances:</strong> {{ data.instance_count }}</p>
+                            
+                            {% if data.instances %}
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Status</th>
+                                        <th>Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for inst in data.instances %}
+                                    <tr>
+                                        <td>{{ inst.name }}</td>
+                                        <td><span class="badge bg-{{ 'success' if inst.status == 'running' else 'secondary' }}">{{ inst.status }}</span></td>
+                                        <td>{{ inst.type }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No servers configured. Add a server to get started.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('addServerForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+    
+    fetch('/api/servers/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            location.reload();
+        } else {
+            alert('Failed to add server');
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>System Metrics</h2>
+            <p class="text-muted">Real-time monitoring and performance metrics</p>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">CPU Usage</h5>
+                    <h2 class="text-primary">{{ metrics.cpu_percent|round(1) }}%</h2>
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: {{ metrics.cpu_percent }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Memory</h5>
+                    <h2 class="text-success">{{ metrics.memory_percent|round(1) }}%</h2>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ metrics.memory_percent }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Disk Usage</h5>
+                    <h2 class="text-warning">{{ metrics.disk_percent|round(1) }}%</h2>
+                    <div class="progress">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ metrics.disk_percent }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Uptime</h5>
+                    <h2 class="text-info">{{ (metrics.uptime_seconds / 3600)|round(1) }}h</h2>
+                    <small class="text-muted">{{ (metrics.uptime_seconds / 86400)|round(1) }} days</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Memory Details</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Used:</strong> {{ (metrics.memory_used_mb)|round(0) }} MB</p>
+                    <p><strong>Total:</strong> {{ (metrics.memory_total_mb)|round(0) }} MB</p>
+                    <p><strong>Available:</strong> {{ (metrics.memory_total_mb - metrics.memory_used_mb)|round(0) }} MB</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Network Traffic</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Sent:</strong> {{ (metrics.network_sent_mb)|round(2) }} MB</p>
+                    <p><strong>Received:</strong> {{ (metrics.network_recv_mb)|round(2) }} MB</p>
+                    <p><strong>Total:</strong> {{ (metrics.network_sent_mb + metrics.network_recv_mb)|round(2) }} MB</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh every 5 seconds
+setTimeout(() => location.reload(), 5000);
+</script>
+{% endblock %}
