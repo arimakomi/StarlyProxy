@@ -25,6 +25,10 @@
                         <i class="bi bi-speedometer2"></i>
                         <span>Dashboard</span>
                     </a>
+                    <a href="/xray" class="nav-item {% if request.path.startswith('/xray') %}active{% endif %}">
+                        <i class="bi bi-box-seam"></i>
+                        <span>Xray VPN</span>
+                    </a>
                     <a href="/instances" class="nav-item {% if request.path == '/instances' %}active{% endif %}">
                         <i class="bi bi-layers"></i>
                         <span>Instances</span>
