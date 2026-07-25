@@ -1,20 +1,36 @@
+#!/usr/bin/env python3
 """
-StarlyProxy Web Panel - Flask Application
-پنل مدیریت وب با dashboard کامل
+StarlyProxy Web Panel
+Professional web-based management interface
 """
 
 from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask_cors import CORS
 import sys
+import os
 from pathlib import Path
+import json
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Fix import path
+SCRIPT_DIR = Path(__file__).parent.absolute()
+PROJECT_ROOT = SCRIPT_DIR.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-from core import InstanceManager, ConfigManager, DatabaseManager
-from core.utils import format_bytes, format_duration, get_system_info
+os.environ['PYTHONPATH'] = str(PROJECT_ROOT)
+
+try:
+    from core import InstanceManager, ConfigManager, DatabaseManager
+    from core.utils import format_bytes, format_duration, get_system_info
+except ImportError as e:
+    print(f"CRITICAL: Cannot import core modules: {e}")
+    print(f"PROJECT_ROOT: {PROJECT_ROOT}")
+    print(f"sys.path: {sys.path}")
+    sys.exit(1)
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'starlyproxy-secret-key-change-me'
+app.config['SECRET_KEY'] = 'starlyproxy-secret-key-change-in-production'
+CORS(app)
 
 mgr = InstanceManager()
 config_mgr = ConfigManager()
@@ -23,12 +39,11 @@ db_mgr = DatabaseManager()
 
 @app.route('/')
 def index():
-    """Dashboard صفحه اصلی"""
+    """Dashboard main page"""
     instances = mgr.list_instances()
     
-    # محاسبه آمار کلی
     total = len(instances)
-    running = sum(1 for i in instances if i['status'] == 'running')
+    running = sum(1 for i in instances if i.get('status') == 'running')
     stopped = total - running
     
     system_info = get_system_info()
@@ -43,7 +58,7 @@ def index():
 
 @app.route('/instances')
 def instances_page():
-    """صفحه لیست instance ها"""
+    """Instances list page"""
     instances = []
     for name in config_mgr.list_instances():
         status = mgr.get_instance_status(name)
@@ -53,184 +68,150 @@ def instances_page():
     return render_template('instances.html', instances=instances)
 
 
-@app.route('/instance/<name>')
-def instance_detail(name):
-    """صفحه جزئیات instance"""
-    status = mgr.get_instance_status(name)
-    if not status:
-        return "Instance not found", 404
-    
-    # دریافت لاگ‌ها
-    logs = db_mgr.get_logs(instance_name=name, limit=100)
-    
-    # دریافت آمار
-    stats = db_mgr.get_stats(name, hours=24)
-    
-    return render_template('instance_detail.html',
-                          instance=status,
-                          logs=logs,
-                          stats=stats)
-
-
-@app.route('/add', methods=['GET', 'POST'])
-def add_instance():
-    """صفحه افزودن instance جدید"""
-    if request.method == 'POST':
-        name = request.form.get('name')
-        instance_type = request.form.get('type')
-        mode = request.form.get('mode')
-        server = request.form.get('server')
-        key = request.form.get('key')
-        profile = request.form.get('profile', 'standard')
-        
-        # Parse server address
-        if ':' in server:
-            server_ip, server_port = server.rsplit(':', 1)
-            server_port = int(server_port)
-        else:
-            return jsonify({'error': 'فرمت آدرس سرور نادرست است'}), 400
-        
-        success = mgr.create_instance(
-            name=name,
-            instance_type=instance_type,
-            mode=mode,
-            server_address=server_ip,
-            server_port=server_port,
-            secret_key=key,
-            profile=profile
-        )
-        
-        if success:
-            return redirect(url_for('instances_page'))
-        else:
-            return jsonify({'error': 'خطا در ایجاد instance'}), 500
-    
-    return render_template('add_instance.html')
-
-
-@app.route('/api/instance/<name>/start', methods=['POST'])
-def api_start_instance(name):
-    """API: شروع instance"""
-    if mgr.start_instance(name):
-        return jsonify({'success': True, 'message': f'Instance {name} started'})
-    return jsonify({'success': False, 'error': 'Failed to start instance'}), 500
-
-
-@app.route('/api/instance/<name>/stop', methods=['POST'])
-def api_stop_instance(name):
-    """API: توقف instance"""
-    force = request.json.get('force', False) if request.is_json else False
-    if mgr.stop_instance(name, force=force):
-        return jsonify({'success': True, 'message': f'Instance {name} stopped'})
-    return jsonify({'success': False, 'error': 'Failed to stop instance'}), 500
-
-
-@app.route('/api/instance/<name>/restart', methods=['POST'])
-def api_restart_instance(name):
-    """API: ریستارت instance"""
-    if mgr.restart_instance(name):
-        return jsonify({'success': True, 'message': f'Instance {name} restarted'})
-    return jsonify({'success': False, 'error': 'Failed to restart instance'}), 500
-
-
-@app.route('/api/instance/<name>/delete', methods=['DELETE'])
-def api_delete_instance(name):
-    """API: حذف instance"""
-    if mgr.delete_instance(name, stop_first=True):
-        return jsonify({'success': True, 'message': f'Instance {name} deleted'})
-    return jsonify({'success': False, 'error': 'Failed to delete instance'}), 500
-
-
-@app.route('/api/instance/<name>/status')
-def api_instance_status(name):
-    """API: دریافت وضعیت instance"""
-    status = mgr.get_instance_status(name)
-    if status:
-        return jsonify(status)
-    return jsonify({'error': 'Instance not found'}), 404
-
-
-@app.route('/api/instances')
-def api_list_instances():
-    """API: لیست همه instance ها"""
-    instances = mgr.list_instances()
-    return jsonify(instances)
-
-
-@app.route('/api/stats/<name>')
-def api_instance_stats(name):
-    """API: آمار instance"""
-    hours = request.args.get('hours', 24, type=int)
-    stats = db_mgr.get_stats(name, hours=hours)
-    return jsonify(stats)
-
-
-@app.route('/api/logs/<name>')
-def api_instance_logs(name):
-    """API: لاگ‌های instance"""
-    limit = request.args.get('limit', 100, type=int)
-    logs = db_mgr.get_logs(instance_name=name, limit=limit)
-    return jsonify(logs)
-
-
-@app.route('/api/system')
-def api_system_info():
-    """API: اطلاعات سیستم"""
-    return jsonify(get_system_info())
-
-
-@app.template_filter('format_bytes')
-def format_bytes_filter(value):
-    """Template filter: فرمت بایت"""
-    return format_bytes(value)
-
-
-@app.template_filter('format_duration')
-def format_duration_filter(value):
-    """Template filter: فرمت مدت زمان"""
-    return format_duration(value)
+@app.route('/add')
+def add_page():
+    """Add new instance page"""
+    return render_template('add.html')
 
 
 @app.route('/settings')
-def settings():
+def settings_page():
     """Settings page"""
-    return render_template('settings.html')
+    config = {}
+    try:
+        config_file = PROJECT_ROOT / 'panel_config.json'
+        if config_file.exists():
+            with open(config_file) as f:
+                config = json.load(f)
+    except:
+        pass
+    
+    system_info = get_system_info()
+    return render_template('settings.html', config=config, system_info=system_info)
+
+
+@app.route('/api/instances', methods=['GET'])
+def api_list_instances():
+    """API: List all instances"""
+    instances = mgr.list_instances()
+    return jsonify({'success': True, 'instances': instances})
+
+
+@app.route('/api/instances/add', methods=['POST'])
+def api_add_instance():
+    """API: Add new instance"""
+    data = request.get_json()
+    
+    name = data.get('name')
+    instance_type = data.get('type', 'paqet')
+    mode = data.get('mode', 'client')
+    server = data.get('server')
+    key = data.get('key')
+    profile = data.get('profile', 'default')
+    
+    if not all([name, server, key]):
+        return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+    
+    if ':' in server:
+        server_ip, server_port = server.rsplit(':', 1)
+        server_port = int(server_port)
+    else:
+        return jsonify({'success': False, 'error': 'Invalid server format'}), 400
+    
+    success = mgr.create_instance(
+        name=name,
+        instance_type=instance_type,
+        mode=mode,
+        server_address=server_ip,
+        server_port=server_port,
+        secret_key=key,
+        profile=profile
+    )
+    
+    if success:
+        return jsonify({'success': True, 'message': 'Instance created'})
+    else:
+        return jsonify({'success': False, 'error': 'Failed to create instance'}), 500
+
+
+@app.route('/api/instances/<name>/start', methods=['POST'])
+def api_start_instance(name):
+    """API: Start instance"""
+    success = mgr.start_instance(name)
+    return jsonify({'success': success})
+
+
+@app.route('/api/instances/<name>/stop', methods=['POST'])
+def api_stop_instance(name):
+    """API: Stop instance"""
+    success = mgr.stop_instance(name)
+    return jsonify({'success': success})
+
+
+@app.route('/api/instances/<name>/restart', methods=['POST'])
+def api_restart_instance(name):
+    """API: Restart instance"""
+    success = mgr.restart_instance(name)
+    return jsonify({'success': success})
+
+
+@app.route('/api/instances/<name>/delete', methods=['DELETE'])
+def api_delete_instance(name):
+    """API: Delete instance"""
+    success = mgr.delete_instance(name)
+    return jsonify({'success': success})
+
+
+@app.route('/api/instances/<name>/status', methods=['GET'])
+def api_get_status(name):
+    """API: Get instance status"""
+    status = mgr.get_instance_status(name)
+    if status:
+        return jsonify({'success': True, 'status': status})
+    else:
+        return jsonify({'success': False, 'error': 'Instance not found'}), 404
+
+
+@app.route('/api/instances/<name>/logs', methods=['GET'])
+def api_get_logs(name):
+    """API: Get instance logs"""
+    lines = request.args.get('lines', 100, type=int)
+    logs = mgr.get_instance_logs(name, lines=lines)
+    return jsonify({'success': True, 'logs': logs})
 
 
 @app.route('/api/instances/stop-all', methods=['POST'])
 def api_stop_all():
-    """Stop all instances"""
-    try:
-        mgr = InstanceManager()
-        instances = mgr.list_instances()
-        stopped = 0
-        
-        for inst in instances:
-            if inst.get('status') == 'running':
-                if mgr.stop_instance(inst['name']):
-                    stopped += 1
-        
-        return jsonify({'success': True, 'stopped': stopped})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    """API: Stop all instances"""
+    instances = mgr.list_instances()
+    stopped = 0
+    for inst in instances:
+        if mgr.stop_instance(inst['name']):
+            stopped += 1
+    return jsonify({'success': True, 'stopped': stopped})
 
 
-@app.route('/api/system')
-def api_system():
-    """System information"""
-    try:
-        import psutil
-        
-        return jsonify({
-            'cpu_percent': psutil.cpu_percent(interval=1),
-            'memory_percent': psutil.virtual_memory().percent,
-            'disk_percent': psutil.disk_usage('/').percent
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+@app.route('/api/instances/start-all', methods=['POST'])
+def api_start_all():
+    """API: Start all instances"""
+    instances = mgr.list_instances()
+    started = 0
+    for inst in instances:
+        if mgr.start_instance(inst['name']):
+            started += 1
+    return jsonify({'success': True, 'started': started})
+
+
+@app.route('/api/system', methods=['GET'])
+def api_system_info():
+    """API: Get system information"""
+    info = get_system_info()
+    return jsonify({'success': True, 'system': info})
 
 
 if __name__ == '__main__':
-    import os
     port = int(os.environ.get('FLASK_PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    
+    print(f"Starting StarlyProxy Web Panel on port {port}...")
+    app.run(host='0.0.0.0', port=port, debug=debug)

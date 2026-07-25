@@ -362,9 +362,16 @@ log "Python packages installation completed successfully"
 # [6/9] CLI setup
 echo -e "${CYAN}[6/9]${NC} Setting up CLI command..."
 log "Step 6: CLI setup"
-ln -sf "$INSTALL_DIR/cli/starlyproxy-cli.py" /usr/local/bin/starlyproxy
+
+# Make scripts executable
 chmod +x "$INSTALL_DIR/cli/starlyproxy-cli.py"
+chmod +x "$INSTALL_DIR/starlyproxy-wrapper.sh"
+
+# Create symlink to wrapper (not direct to Python script)
+ln -sf "$INSTALL_DIR/starlyproxy-wrapper.sh" /usr/local/bin/starlyproxy
+
 echo -e "${GREEN}✓ CLI command: ${CYAN}starlyproxy${NC}"
+log "CLI command configured with wrapper"
 
 # [7/9] Database
 echo -e "${CYAN}[7/9]${NC} Initializing database..."

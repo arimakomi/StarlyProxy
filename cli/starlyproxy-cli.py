@@ -1,19 +1,34 @@
 #!/usr/bin/env python3
 """
 StarlyProxy CLI - Command Line Interface
-مدیریت کامل instance ها از خط فرمان
+Complete instance management from command line
 """
 
 import sys
+import os
 import argparse
 import logging
 from pathlib import Path
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Fix import path - ensure we can find core module
+SCRIPT_DIR = Path(__file__).parent.absolute()
+PROJECT_ROOT = SCRIPT_DIR.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-from core import InstanceManager, ConfigManager, DatabaseManager
-from core.utils import check_root_privileges, format_bytes, format_duration
+# Set PYTHONPATH environment variable as fallback
+os.environ['PYTHONPATH'] = str(PROJECT_ROOT)
+
+try:
+    from core import InstanceManager, ConfigManager, DatabaseManager
+    from core.utils import check_root_privileges, format_bytes, format_duration
+except ImportError as e:
+    print(f"Error importing core modules: {e}")
+    print(f"PROJECT_ROOT: {PROJECT_ROOT}")
+    print(f"sys.path: {sys.path}")
+    print("\nMake sure StarlyProxy is installed correctly:")
+    print("  cd /opt/starlyproxy && source venv/bin/activate")
+    sys.exit(1)
 
 logging.basicConfig(
     level=logging.INFO,
