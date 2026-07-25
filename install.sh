@@ -116,9 +116,14 @@ echo -e "${CYAN}[1/9]${NC} Installing system packages..."
 if [[ "$OS" =~ ^(ubuntu|debian)$ ]]; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq >/dev/null 2>&1
-    apt-get install -y -qq python3 python3-pip python3-venv git nginx certbot python3-certbot-nginx >/dev/null 2>&1
+    apt-get install -y python3 python3-pip python3-venv git nginx certbot python3-certbot-nginx 2>&1 | grep -v "^$" | head -5 || true
 elif [[ "$OS" =~ ^(centos|rhel|rocky|almalinux)$ ]]; then
-    yum install -y -q python3 python3-pip git nginx certbot python3-certbot-nginx >/dev/null 2>&1
+    # Install EPEL first for certbot
+    yum install -y epel-release 2>&1 | grep -v "^$" | head -3 || true
+    # Install packages
+    yum install -y python3 python3-pip python3-devel git nginx 2>&1 | grep -v "^$" | head -5 || true
+    # Try certbot (optional, may not be available)
+    yum install -y certbot python3-certbot-nginx 2>&1 | grep -v "^$" | head -3 || true
 fi
 echo -e "${GREEN}✓ Packages installed${NC}"
 
