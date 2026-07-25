@@ -1,37 +1,47 @@
-/* StarlyProxy - Linear-inspired Design System */
+/* StarlyProxy - Enhanced Linear-inspired Design System */
 
 :root {
-    /* Colors */
-    --bg-base: #0d0d0d;
-    --bg-surface: #1a1a1a;
-    --bg-hover: #242424;
-    --bg-active: #2e2e2e;
-    --border: #2e2e2e;
-    --text-primary: #f5f5f5;
-    --text-secondary: #a0a0a0;
-    --text-tertiary: #6b6b6b;
-    --accent: #8b5cf6;
-    --accent-hover: #7c3aed;
+    /* Colors - Enhanced palette */
+    --bg-base: #08090a;
+    --bg-surface: #0f1011;
+    --bg-elevated: #191a1b;
+    --bg-hover: #28282c;
+    --bg-active: #34343a;
+    --border: rgba(255,255,255,0.08);
+    --border-subtle: rgba(255,255,255,0.05);
+    --text-primary: #f7f8f8;
+    --text-secondary: #d0d6e0;
+    --text-tertiary: #8a8f98;
+    --text-quaternary: #62666d;
+    --accent: #7170ff;
+    --accent-hover: #828fff;
+    --accent-bg: #5e6ad2;
     --success: #10b981;
+    --success-bg: rgba(16,185,129,0.15);
     --danger: #ef4444;
+    --danger-bg: rgba(239,68,68,0.15);
     --warning: #f59e0b;
+    --warning-bg: rgba(245,158,11,0.15);
     
-    /* Spacing */
+    /* Spacing - 8px grid system */
     --space-xs: 4px;
     --space-sm: 8px;
     --space-md: 16px;
     --space-lg: 24px;
     --space-xl: 32px;
+    --space-2xl: 48px;
     
     /* Radius */
     --radius-sm: 6px;
     --radius-md: 8px;
     --radius-lg: 12px;
+    --radius-xl: 16px;
     
-    /* Shadows */
-    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-    --shadow-md: 0 4px 8px rgba(0,0,0,0.4);
-    --shadow-lg: 0 8px 16px rgba(0,0,0,0.5);
+    /* Shadows - Layered depth */
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 16px rgba(0,0,0,0.6), 0 4px 8px rgba(0,0,0,0.4);
+    --shadow-inset: inset 0 0 12px rgba(0,0,0,0.2);
 }
 
 * {
@@ -41,11 +51,13 @@
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background: var(--bg-base);
     color: var(--text-primary);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv01", "ss03";
 }
 
 /* Layout */
@@ -54,9 +66,9 @@ body {
     min-height: 100vh;
 }
 
-/* Sidebar */
+/* Sidebar - Enhanced */
 .sidebar {
-    width: 240px;
+    width: 260px;
     background: var(--bg-surface);
     border-right: 1px solid var(--border);
     padding: var(--space-lg);
@@ -65,21 +77,24 @@ body {
     position: fixed;
     height: 100vh;
     overflow-y: auto;
+    box-shadow: var(--shadow-md);
 }
 
 .sidebar-brand {
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
-    margin-bottom: var(--space-xl);
-    font-size: 18px;
+    gap: var(--space-md);
+    margin-bottom: var(--space-2xl);
+    font-size: 20px;
     font-weight: 600;
     color: var(--text-primary);
+    letter-spacing: -0.5px;
 }
 
 .sidebar-brand i {
-    font-size: 24px;
+    font-size: 28px;
     color: var(--accent);
+    filter: drop-shadow(0 0 8px rgba(113,112,255,0.3));
 }
 
 .sidebar-nav {
@@ -103,24 +118,49 @@ body {
 .nav-item {
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
-    padding: var(--space-sm);
+    gap: var(--space-md);
+    padding: 10px var(--space-md);
     border-radius: var(--radius-sm);
     color: var(--text-secondary);
     text-decoration: none;
     font-size: 14px;
-    transition: all 0.15s ease;
-    margin-bottom: 2px;
+    font-weight: 500;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-bottom: 4px;
+    position: relative;
+}
+
+.nav-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 0;
+    background: var(--accent);
+    border-radius: 0 2px 2px 0;
+    transition: height 0.2s ease;
 }
 
 .nav-item:hover {
     background: var(--bg-hover);
     color: var(--text-primary);
+    transform: translateX(2px);
+}
+
+.nav-item:hover::before {
+    height: 60%;
 }
 
 .nav-item.active {
     background: var(--bg-active);
     color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.nav-item.active::before {
+    height: 70%;
 }
 
 .nav-item i {
