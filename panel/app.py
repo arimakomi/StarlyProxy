@@ -63,7 +63,6 @@ def login_required(f):
 # Import and register Xray routes
 from xray_routes import register_xray_routes
 register_xray_routes(app, xray_mgr, xray_inbound_mgr, xray_outbound_mgr, xray_user_mgr, login_required)
-    return decorated_function
 
 
 @app.route('/login', methods=['GET', 'POST'])
