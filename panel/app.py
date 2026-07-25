@@ -123,7 +123,7 @@ def instances_page():
 @login_required
 def add_page():
     """Add new instance page"""
-    return render_template('add.html')
+    return render_template('add_instance.html')
 
 
 @app.route('/settings')
