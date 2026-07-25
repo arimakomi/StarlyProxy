@@ -92,10 +92,14 @@ log "Step 1: Installing system packages"
 if [[ "$OS" =~ ^(ubuntu|debian)$ ]]; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq >> "$LOG_FILE" 2>&1 || true
-    apt-get install -y python3 python3-pip python3-venv git nginx build-essential python3-dev >> "$LOG_FILE" 2>&1 || echo "Warning: Some packages may have failed"
+    apt-get install -y python3 python3-pip python3-venv git build-essential python3-dev >> "$LOG_FILE" 2>&1 || echo "Warning: Some packages may have failed"
+    # Nginx is optional
+    apt-get install -y nginx >> "$LOG_FILE" 2>&1 || echo "Nginx skipped (optional)"
 elif [[ "$OS" =~ ^(centos|rhel|rocky|almalinux)$ ]]; then
     yum install -y epel-release >> "$LOG_FILE" 2>&1 || true
-    yum install -y python3 python3-pip python3-devel git gcc gcc-c++ make nginx >> "$LOG_FILE" 2>&1 || echo "Warning: Some packages may have failed"
+    yum install -y python3 python3-pip python3-devel git gcc gcc-c++ make >> "$LOG_FILE" 2>&1 || echo "Warning: Some packages may have failed"
+    # Nginx is optional (may be excluded by system policy)
+    yum install -y nginx >> "$LOG_FILE" 2>&1 || echo "Nginx skipped (optional)"
 else
     echo -e "${YELLOW}⚠️  Unknown OS: $OS - continuing anyway${NC}"
     log "WARNING: Unknown OS: $OS"
