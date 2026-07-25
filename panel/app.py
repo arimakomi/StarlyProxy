@@ -76,6 +76,7 @@ def login():
             token = auth_mgr.create_session(username)
             session['auth_token'] = token
             session['username'] = username
+            session['user_id'] = username  # Required by login_required decorator
             return redirect(url_for('index'))
         else:
             flash('Invalid username or password', 'error')
