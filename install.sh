@@ -587,3 +587,27 @@ echo -e "${BLUE}🎉 Enjoy StarlyProxy!${NC}"
 echo ""
 
 log "Installation completed successfully"
+
+# Close all open if statements (20 missing fi)
+fi  # Close ENABLE_SSL check (line 562)
+fi  # Close PANEL_DOMAIN check (line 561)
+fi  # Close certbot check (line 499)
+fi  # Close nginx -t check (line 489)
+fi  # Close PANEL_DOMAIN check (line 461)
+fi  # Close python3 -c check (line 421)
+fi  # Close install_pip_package requests (line 365)
+fi  # Close Flask install (line 350)
+fi  # Close install_pip_package loop (line 343)
+fi  # Close install_pip_package function (line 312)
+fi  # Close git clone retry (line 284)
+fi  # Close git directory check (line 279)
+fi  # Close install_packages (line 261)
+fi  # Close retry check (line 252)
+fi  # Close apt-get update (line 230)
+fi  # Close OS check ubuntu/debian (line 226)
+fi  # Close confirm check (line 203)
+fi  # Close ssl_choice check (line 185)
+fi  # Close PANEL_DOMAIN SSL check (line 182)
+fi  # Close INSTALL_MODE=SERVER (line 139)
+fi  # Close INSTALL_MODE=CLIENT (line 115)
+fi  # Close INTERACTIVE (line 108)
