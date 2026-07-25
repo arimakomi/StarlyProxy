@@ -243,6 +243,64 @@ def cmd_logs(args):
         print(f"[{timestamp}] [{level}] [{instance}] {message}")
 
 
+def cmd_update(args):
+    """Update StarlyProxy to latest version"""
+    if not check_root_privileges():
+        print("❌ Root access required for updates")
+        return 1
+    
+    print("🔄 Checking for updates...")
+    
+    import subprocess
+    try:
+        # Fetch remote updates
+        result = subprocess.run(
+            ['git', '-C', '/opt/starlyproxy', 'remote', 'update'],
+            capture_output=True,
+            timeout=30
+        )
+        
+        # Check if behind
+        result = subprocess.run(
+            ['git', '-C', '/opt/starlyproxy', 'status', '-uno'],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if 'Your branch is behind' in result.stdout or 'can be fast-forwarded' in result.stdout:
+            print("📦 New version available, updating...")
+            
+            # Pull latest
+            result = subprocess.run(
+                ['git', '-C', '/opt/starlyproxy', 'pull', 'origin', 'main'],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode == 0:
+                print("✅ Code updated successfully")
+                print("🔄 Restarting panel...")
+                
+                subprocess.run(['systemctl', 'restart', 'starlyproxy-panel'], check=False)
+                print("✅ Update complete!")
+                return 0
+            else:
+                print(f"❌ Update failed: {result.stderr}")
+                return 1
+        else:
+            print("✅ Already running latest version")
+            return 0
+            
+    except subprocess.TimeoutExpired:
+        print("❌ Update timed out")
+        return 1
+    except Exception as e:
+        print(f"❌ Update error: {e}")
+        return 1
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='StarlyProxy - Multi-instance proxy management',
