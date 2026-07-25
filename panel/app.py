@@ -204,8 +204,7 @@ def servers_page():
 @login_required
 def users_page():
     """User management page (admin only)"""
-    users = auth_mgr.list_users()
-    return render_template('users.html', users=users)
+    return render_template('users_v3.html')
 
 
 # API Routes
