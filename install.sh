@@ -333,6 +333,13 @@ pip install --no-cache-dir flask-cors >> "$LOG_FILE" 2>&1 || {
     log "WARNING: flask-cors install failed"
 }
 
+# Requests for multi-server (required)
+echo -e "${CYAN}   → Installing requests library...${NC}"
+if ! install_pip_package "requests"; then
+    echo -e "${YELLOW}   ⚠️  Requests failed, multi-server will not work${NC}"
+    log "WARNING: requests install failed"
+fi
+
 # Colorama for CLI colors (optional)
 echo -e "${CYAN}   → Installing CLI enhancements...${NC}"
 pip install --no-cache-dir colorama >> "$LOG_FILE" 2>&1 || {
