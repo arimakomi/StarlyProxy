@@ -1,0 +1,241 @@
+{% extends "base_v3.html" %}
+
+{% block title %}Settings — StarlyProxy{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Settings</h1>
+    <p class="page-subtitle">System configuration and management</p>
+</div>
+
+<!-- System Info Card -->
+<div class="card" style="margin-bottom: 16px;">
+    <div class="card-header">
+        <span><i class="bi bi-info-circle"></i> System Information</span>
+    </div>
+    <div class="card-body">
+        <table style="width: 100%; font-size: 14px;">
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 12px 0; color: var(--text-secondary); width: 200px;">Operating System</td>
+                <td style="padding: 12px 0;">{{ system_info.os }} {{ system_info.os_version }}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 12px 0; color: var(--text-secondary);">Hostname</td>
+                <td style="padding: 12px 0;">{{ system_info.hostname }}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 12px 0; color: var(--text-secondary);">CPU Cores</td>
+                <td style="padding: 12px 0;">{{ system_info.cpu_count }}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 12px 0; color: var(--text-secondary);">Total Memory</td>
+                <td style="padding: 12px 0;">{{ system_info.memory_total_gb }} GB</td>
+            </tr>
+            <tr>
+                <td style="padding: 12px 0; color: var(--text-secondary);">Python Version</td>
+                <td style="padding: 12px 0;">{{ system_info.python_version }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<!-- Update Card -->
+<div class="card" style="margin-bottom: 16px;">
+    <div class="card-header">
+        <span><i class="bi bi-arrow-repeat"></i> Updates</span>
+    </div>
+    <div class="card-body">
+        <div id="update-status" style="margin-bottom: 16px;">
+            <p style="color: var(--text-secondary); margin-bottom: 8px;">Check for the latest version</p>
+            <button onclick="checkUpdates()" class="btn btn-primary">
+                <i class="bi bi-search"></i> Check for Updates
+            </button>
+        </div>
+        <div id="update-result" style="display: none; padding: 16px; border-radius: 8px; margin-top: 16px;"></div>
+    </div>
+</div>
+
+<!-- Panel Config Card -->
+<div class="card" style="margin-bottom: 16px;">
+    <div class="card-header">
+        <span><i class="bi bi-gear"></i> Panel Configuration</span>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="/api/settings/save">
+            <div class="form-group">
+                <label class="form-label">Panel Port</label>
+                <input type="number" class="form-control" name="port" 
+                       value="{{ config.get('port', 5000) }}" min="1024" max="65535">
+                <small style="color: var(--text-tertiary);">Requires panel restart</small>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Session Timeout (minutes)</label>
+                <input type="number" class="form-control" name="session_timeout" 
+                       value="{{ config.get('session_timeout', 60) }}" min="5" max="1440">
+            </div>
+            
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i> Save Settings
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Backup Card -->
+<div class="card" style="margin-bottom: 16px;">
+    <div class="card-header">
+        <span><i class="bi bi-archive"></i> Backup & Restore</span>
+    </div>
+    <div class="card-body">
+        <p style="color: var(--text-secondary); margin-bottom: 16px;">
+            Create backups of your configuration and instances
+        </p>
+        <div style="display: flex; gap: 8px;">
+            <a href="/backups" class="btn btn-primary">
+                <i class="bi bi-folder"></i> Manage Backups
+            </a>
+            <button onclick="createBackup()" class="btn btn-secondary">
+                <i class="bi bi-plus-circle"></i> Create Backup Now
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Danger Zone -->
+<div class="card" style="border-color: var(--danger);">
+    <div class="card-header" style="border-color: var(--danger); color: var(--danger);">
+        <span><i class="bi bi-exclamation-triangle"></i> Danger Zone</span>
+    </div>
+    <div class="card-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border);">
+            <div>
+                <strong>Restart Panel</strong>
+                <p style="color: var(--text-tertiary); font-size: 13px; margin: 4px 0 0 0;">
+                    Restart the web panel service
+                </p>
+            </div>
+            <button onclick="restartPanel()" class="btn btn-secondary">
+                <i class="bi bi-arrow-clockwise"></i> Restart
+            </button>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
+            <div>
+                <strong style="color: var(--danger);">Stop All Instances</strong>
+                <p style="color: var(--text-tertiary); font-size: 13px; margin: 4px 0 0 0;">
+                    Stop all running proxy instances
+                </p>
+            </div>
+            <button onclick="stopAll()" class="btn btn-secondary" style="color: var(--danger);">
+                <i class="bi bi-stop-circle"></i> Stop All
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function checkUpdates() {
+    const btn = event.target;
+    const result = document.getElementById('update-result');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Checking...';
+    
+    axios.get('/api/system/check-updates')
+        .then(response => {
+            if (response.data.update_available) {
+                result.style.display = 'block';
+                result.style.background = 'rgba(139, 92, 246, 0.15)';
+                result.style.border = '1px solid var(--accent)';
+                result.innerHTML = `
+                    <strong style="color: var(--accent);">Update Available!</strong>
+                    <p style="margin: 8px 0; color: var(--text-secondary);">
+                        Current: ${response.data.current_version}<br>
+                        Latest: ${response.data.latest_version}
+                    </p>
+                    <button onclick="performUpdate()" class="btn btn-primary btn-sm">
+                        <i class="bi bi-download"></i> Update Now
+                    </button>
+                `;
+            } else {
+                result.style.display = 'block';
+                result.style.background = 'rgba(16, 185, 129, 0.15)';
+                result.style.border = '1px solid var(--success)';
+                result.innerHTML = `
+                    <strong style="color: var(--success);">Up to Date</strong>
+                    <p style="margin: 8px 0 0 0; color: var(--text-secondary);">
+                        You're running the latest version (${response.data.current_version})
+                    </p>
+                `;
+            }
+        })
+        .catch(error => {
+            result.style.display = 'block';
+            result.style.background = 'rgba(239, 68, 68, 0.15)';
+            result.style.border = '1px solid var(--danger)';
+            result.innerHTML = `
+                <strong style="color: var(--danger);">Error</strong>
+                <p style="margin: 8px 0 0 0; color: var(--text-secondary);">
+                    ${error.response?.data?.error || error.message}
+                </p>
+            `;
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-search"></i> Check for Updates';
+        });
+}
+
+function performUpdate() {
+    if (!confirm('This will restart the panel. Continue?')) return;
+    
+    axios.post('/api/system/update')
+        .then(response => {
+            alert('Update started. Panel will restart in a moment.');
+            setTimeout(() => location.reload(), 5000);
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+function createBackup() {
+    if (!confirm('Create backup now?')) return;
+    
+    axios.post('/api/backups/create')
+        .then(response => {
+            alert('Backup created successfully!');
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+function restartPanel() {
+    if (!confirm('Restart panel? You will be disconnected briefly.')) return;
+    
+    axios.post('/api/system/restart')
+        .then(response => {
+            alert('Panel is restarting...');
+            setTimeout(() => location.reload(), 5000);
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+
+function stopAll() {
+    if (!confirm('Stop ALL running instances? This cannot be undone!')) return;
+    
+    axios.post('/api/instances/stop-all')
+        .then(response => {
+            alert('All instances stopped');
+            location.reload();
+        })
+        .catch(error => {
+            alert('Error: ' + (error.response?.data?.error || error.message));
+        });
+}
+</script>
+{% endblock %}

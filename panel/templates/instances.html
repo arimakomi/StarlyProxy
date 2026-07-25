@@ -1,163 +1,146 @@
-{% extends "base.html" %}
+{% extends "base_v3.html" %}
 
-{% block title %}Instance ها - StarlyProxy{% endblock %}
+{% block title %}Instances — StarlyProxy{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12 d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-layers"></i> مدیریت Instance ها</h2>
-        <a href="/add" class="btn btn-success">
-            <i class="bi bi-plus-circle"></i> افزودن جدید
-        </a>
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1 class="page-title">Proxy Instances</h1>
+        <p class="page-subtitle">Manage all your proxy instances</p>
     </div>
+    <a href="/add" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add New
+    </a>
 </div>
 
 {% if instances %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                لیست Instance ها ({{ instances|length }})
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>نام</th>
-                                <th>نوع</th>
-                                <th>حالت</th>
-                                <th>وضعیت</th>
-                                <th>پورت SOCKS</th>
-                                <th>سرور</th>
-                                <th>Uptime</th>
-                                <th>عملیات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for inst in instances %}
-                            <tr id="instance-{{ inst.name }}">
-                                <td><strong>{{ inst.name }}</strong></td>
-                                <td><span class="badge bg-info">{{ inst.type }}</span></td>
-                                <td><span class="badge bg-secondary">{{ inst.mode }}</span></td>
-                                <td>
-                                    <span class="status-badge status-{{ inst.actual_status }}">
-                                        {{ inst.actual_status }}
-                                    </span>
-                                </td>
-                                <td>
-                                    {% if inst.socks_port %}
-                                        <code>{{ inst.socks_port }}</code>
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                                <td><small>{{ inst.server_address }}</small></td>
-                                <td>
-                                    {% if inst.uptime %}
-                                        {{ inst.uptime|format_duration }}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="/instance/{{ inst.name }}" class="btn btn-info" title="جزئیات">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        {% if inst.actual_status == 'running' %}
-                                        <button class="btn btn-warning" onclick="stopInstance('{{ inst.name }}')" title="توقف">
-                                            <i class="bi bi-stop-fill"></i>
-                                        </button>
-                                        {% else %}
-                                        <button class="btn btn-success" onclick="startInstance('{{ inst.name }}')" title="شروع">
-                                            <i class="bi bi-play-fill"></i>
-                                        </button>
-                                        {% endif %}
-                                        <button class="btn btn-secondary" onclick="restartInstance('{{ inst.name }}')" title="ریستارت">
-                                            <i class="bi bi-arrow-clockwise"></i>
-                                        </button>
-                                        <button class="btn btn-danger" onclick="deleteInstance('{{ inst.name }}')" title="حذف">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+<div class="card">
+    <div class="card-body" style="padding: 0;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Mode</th>
+                    <th>Server</th>
+                    <th>Port</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inst in instances %}
+                <tr>
+                    <td style="font-weight: 500;">{{ inst.name }}</td>
+                    <td style="color: var(--text-secondary);">{{ inst.type }}</td>
+                    <td>
+                        {% if inst.mode == 'server' %}
+                        <span class="badge badge-warning">
+                            <i class="bi bi-hdd-network"></i> Server
+                        </span>
+                        {% else %}
+                        <span class="badge" style="background: rgba(139, 92, 246, 0.15); color: var(--accent);">
+                            <i class="bi bi-pc-display"></i> Client
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td style="font-family: monospace; font-size: 13px;">{{ inst.server }}</td>
+                    <td style="color: var(--text-secondary);">{{ inst.port }}</td>
+                    <td>
+                        {% if inst.status == 'running' %}
+                        <span class="badge badge-success">
+                            <span class="badge-dot"></span> Running
+                        </span>
+                        {% else %}
+                        <span class="badge badge-danger">
+                            <span class="badge-dot"></span> Stopped
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 4px;">
+                            {% if inst.status == 'running' %}
+                            <button onclick="stopInstance('{{ inst.name }}')" class="btn btn-secondary btn-sm">
+                                <i class="bi bi-stop-circle"></i>
+                            </button>
+                            {% else %}
+                            <button onclick="startInstance('{{ inst.name }}')" class="btn btn-primary btn-sm">
+                                <i class="bi bi-play-circle"></i>
+                            </button>
+                            {% endif %}
+                            <a href="/instance/{{ inst.name }}" class="btn btn-secondary btn-sm">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <button onclick="deleteInstance('{{ inst.name }}')" class="btn btn-secondary btn-sm" style="color: var(--danger);">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% else %}
-<div class="row">
-    <div class="col-12">
-        <div class="card text-center p-5">
-            <i class="bi bi-inbox" style="font-size: 5rem; color: #ccc;"></i>
-            <h3 class="mt-3">هیچ Instance ای وجود ندارد</h3>
-            <p class="text-muted">برای شروع، یک Instance جدید اضافه کنید.</p>
-            <a href="/add" class="btn btn-primary btn-lg mt-3">
-                <i class="bi bi-plus-circle"></i> افزودن اولین Instance
-            </a>
-        </div>
+<div class="card">
+    <div class="card-body" style="padding: 48px; text-align: center;">
+        <i class="bi bi-inbox" style="font-size: 64px; color: var(--text-tertiary); display: block; margin-bottom: 16px;"></i>
+        <h3 style="font-size: 20px; margin-bottom: 8px;">No Instances Yet</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 24px;">Create your first proxy instance to get started</p>
+        <a href="/add" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create First Instance
+        </a>
     </div>
 </div>
 {% endif %}
-{% endblock %}
 
-{% block extra_js %}
 <script>
 function startInstance(name) {
-    if (!confirm(`آیا می‌خواهید instance "${name}" را شروع کنید؟`)) return;
+    if (!confirm('Start instance ' + name + '?')) return;
     
-    axios.post(`/api/instance/${name}/start`)
+    axios.post('/api/instances/' + name + '/start')
         .then(response => {
-            alert('Instance با موفقیت شروع شد.');
-            location.reload();
+            if (response.data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + response.data.error);
+            }
         })
         .catch(error => {
-            alert('خطا در شروع instance: ' + (error.response?.data?.error || error.message));
+            alert('Error: ' + error.message);
         });
 }
 
 function stopInstance(name) {
-    if (!confirm(`آیا می‌خواهید instance "${name}" را متوقف کنید؟`)) return;
+    if (!confirm('Stop instance ' + name + '?')) return;
     
-    axios.post(`/api/instance/${name}/stop`)
+    axios.post('/api/instances/' + name + '/stop')
         .then(response => {
-            alert('Instance با موفقیت متوقف شد.');
-            location.reload();
+            if (response.data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + response.data.error);
+            }
         })
         .catch(error => {
-            alert('خطا در توقف instance: ' + (error.response?.data?.error || error.message));
-        });
-}
-
-function restartInstance(name) {
-    if (!confirm(`آیا می‌خواهید instance "${name}" را ریستارت کنید؟`)) return;
-    
-    axios.post(`/api/instance/${name}/restart`)
-        .then(response => {
-            alert('Instance با موفقیت ریستارت شد.');
-            location.reload();
-        })
-        .catch(error => {
-            alert('خطا در ریستارت instance: ' + (error.response?.data?.error || error.message));
+            alert('Error: ' + error.message);
         });
 }
 
 function deleteInstance(name) {
-    if (!confirm(`⚠️ آیا مطمئن هستید که می‌خواهید instance "${name}" را حذف کنید؟\nاین عملیات غیرقابل بازگشت است!`)) return;
+    if (!confirm('Delete instance ' + name + '? This cannot be undone!')) return;
     
-    axios.delete(`/api/instance/${name}/delete`)
+    axios.delete('/api/instances/' + name)
         .then(response => {
-            alert('Instance با موفقیت حذف شد.');
-            location.reload();
+            if (response.data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + response.data.error);
+            }
         })
         .catch(error => {
-            alert('خطا در حذف instance: ' + (error.response?.data?.error || error.message));
+            alert('Error: ' + error.message);
         });
 }
 </script>

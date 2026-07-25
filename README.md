@@ -212,7 +212,52 @@ curl --proxy socks5://127.0.0.1:1080 https://api.ipify.org
 - Bulk operations
 - About/version info
 
-### CLI Commands
+### Uninstallation
+
+To completely remove StarlyProxy:
+
+```bash
+# Quick uninstall (piped)
+curl -fsSL https://raw.githubusercontent.com/arimakomi/StarlyProxy/main/uninstall.sh | sudo bash
+
+# Or review first
+wget https://raw.githubusercontent.com/arimakomi/StarlyProxy/main/uninstall.sh
+sudo bash uninstall.sh
+```
+
+The uninstaller removes:
+- Systemd service
+- Installation directory (`/opt/starlyproxy`)
+- CLI command (`/usr/local/bin/starlyproxy`)
+- All configurations and instances
+
+---
+
+## Updating
+
+Check for updates and upgrade:
+
+```bash
+# Quick update
+curl -fsSL https://raw.githubusercontent.com/arimakomi/StarlyProxy/main/update.sh | sudo bash
+
+# Or review first
+wget https://raw.githubusercontent.com/arimakomi/StarlyProxy/main/update.sh
+sudo bash update.sh
+```
+
+The updater will:
+- Check current vs latest version
+- Stop the service
+- Pull latest changes
+- Update dependencies
+- Restart the service
+
+You can also update via the web panel: **Settings → System → Check for Updates**
+
+---
+
+## CLI Commands
 
 #### List Instances
 ```bash

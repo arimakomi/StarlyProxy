@@ -115,15 +115,48 @@ def instances_page():
         status = mgr.get_instance_status(name)
         if status:
             instances.append(status)
-    
     return render_template('instances.html', instances=instances)
 
 
-@app.route('/add')
+@app.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_page():
     """Add new instance page"""
-    return render_template('add_instance.html')
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name', '').strip()
+            instance_type = request.form.get('type', 'paqet')
+            mode = request.form.get('mode', 'client')
+            server = request.form.get('server', '').strip()
+            key = request.form.get('key', '').strip()
+            port = request.form.get('port', '').strip()
+            
+            if not all([name, server, key, port]):
+                flash('All fields are required!', 'danger')
+                return redirect('/add')
+            
+            result = mgr.create_instance(
+                name=name,
+                instance_type=instance_type,
+                mode=mode,
+                server_address=server.split(':')[0],
+                server_port=int(server.split(':')[1]) if ':' in server else 8443,
+                secret_key=key,
+                local_port=int(port)
+            )
+            
+            if result:
+                flash(f'Instance {name} created successfully!', 'success')
+                return redirect('/instances')
+            else:
+                flash('Error creating instance', 'danger')
+                return redirect('/add')
+                
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'danger')
+            return redirect('/add')
+    
+    return render_template('add.html')
 
 
 @app.route('/settings')
@@ -140,7 +173,7 @@ def settings_page():
         pass
     
     system_info = get_system_info()
-    return render_template('settings.html', config=config, system_info=system_info)
+    return render_template('settings_v3.html', config=config, system_info=system_info)
 
 
 @app.route('/backups')
@@ -405,12 +438,56 @@ def api_system_metrics():
     return jsonify({'success': True, 'metrics': metrics})
 
 
-@app.route('/api/system', methods=['GET'])
+@app.route('/api/system/check-updates', methods=['GET'])
 @login_required
-def api_system_info():
-    """API: Get system information"""
-    info = get_system_info()
-    return jsonify({'success': True, 'system': info})
+def api_check_updates():
+    """API: Check for updates"""
+    try:
+        result = subprocess.run(
+            ['git', 'fetch', 'origin', 'main'],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            timeout=10
+        )
+        
+        current = subprocess.run(
+            ['git', 'describe', '--tags', '--always'],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True
+        ).stdout.strip()
+        
+        latest = subprocess.run(
+            ['git', 'describe', '--tags', '--always', 'origin/main'],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True
+        ).stdout.strip()
+        
+        return jsonify({
+            'success': True,
+            'current_version': current,
+            'latest_version': latest,
+            'update_available': current != latest
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/system/update', methods=['POST'])
+@login_required
+def api_system_update():
+    """API: Perform system update"""
+    try:
+        # Run update script in background
+        subprocess.Popen(
+            ['/bin/bash', str(PROJECT_ROOT / 'update.sh')],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/system/check-updates', methods=['GET'])

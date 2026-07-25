@@ -111,6 +111,33 @@ if [ "$INTERACTIVE" = true ]; then
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
     
+    # Client mode configuration
+    if [ "$INSTALL_MODE" = "CLIENT" ]; then
+        echo -e "${CYAN}📡 Client Mode Configuration${NC}"
+        echo ""
+        
+        DEFAULT_IP=$(hostname -I | awk '{print $1}')
+        read -p "Server IP [$DEFAULT_IP]: " SERVER_IP
+        SERVER_IP=${SERVER_IP:-$DEFAULT_IP}
+        
+        read -p "Server Port [5000]: " SERVER_PORT
+        SERVER_PORT=${SERVER_PORT:-5000}
+        
+        read -p "API Key [auto-generate]: " API_KEY
+        if [ -z "$API_KEY" ]; then
+            API_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+        fi
+        
+        echo ""
+        echo -e "${GREEN}✓ Client configuration:${NC}"
+        echo -e "  Server: ${CYAN}$SERVER_IP:$SERVER_PORT${NC}"
+        echo -e "  API Key: ${CYAN}${API_KEY:0:8}...${NC}"
+        log "Client mode configured: $SERVER_IP:$SERVER_PORT"
+    fi
+    
+    # Server mode configuration
+    if [ "$INSTALL_MODE" = "SERVER" ]; then
+    
     # Domain
     read -p "Domain for web panel [leave empty for IP-only]: " PANEL_DOMAIN
     log "Domain: ${PANEL_DOMAIN:-IP-only}"
