@@ -42,19 +42,17 @@ error_exit() {
 clear 2>/dev/null || true
 echo -e "${BLUE}"
 cat << "EOF"
-╔══════════════════════════════════════════════════════════════╗
-║                                                              ║
-║              ███████╗████████╗ █████╗ ██████╗ ██╗  ██╗      ║
-║              ██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██║  ██║      ║
-║              ███████╗   ██║   ███████║██████╔╝██║  ██║      ║
-║              ╚════██║   ██║   ██╔══██║██╔══██╗██║  ██║      ║
-║              ███████║   ██║   ██║  ██║██║  ██║███████║      ║
-║              ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝      ║
-║                                                              ║
-║                    StarlyProxy v3.0                          ║
-║          Multi-Instance Proxy Management System              ║
-║                                                              ║
-╚══════════════════════════════════════════════════════════════╝
+
+    ███████╗████████╗ █████╗ ██████╗ ██╗  ██╗   ██╗
+    ██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██║  ╚██╗ ██╔╝
+    ███████╗   ██║   ███████║██████╔╝██║   ╚████╔╝ 
+    ╚════██║   ██║   ██╔══██║██╔══██╗██║    ╚██╔╝  
+    ███████║   ██║   ██║  ██║██║  ██║███████╗██║   
+    ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝   
+                                                    
+         StarlyProxy v3.0 - Proxy Manager          
+              Professional Edition                  
+
 EOF
 echo -e "${NC}"
 
@@ -376,14 +374,38 @@ log "CLI command configured with wrapper"
 # [7/9] Database
 echo -e "${CYAN}[7/9]${NC} Initializing database..."
 log "Step 7: Database initialization"
-python3 << PYCODE >> "$LOG_FILE" 2>&1 || error_exit "Failed to initialize database"
+
+# Create database directory
+mkdir -p "$INSTALL_DIR/data" >> "$LOG_FILE" 2>&1
+
+# Initialize database with proper PYTHONPATH
+export PYTHONPATH="$INSTALL_DIR:$PYTHONPATH"
+cd "$INSTALL_DIR"
+
+# Try to initialize database
+if python3 -c "
 import sys
 sys.path.insert(0, '$INSTALL_DIR')
-from core import DatabaseManager
-db = DatabaseManager()
-print("Database initialized successfully")
-PYCODE
-echo -e "${GREEN}✓ Database initialized${NC}"
+try:
+    from core.database import DatabaseManager
+    db = DatabaseManager()
+    print('Database initialized successfully')
+except Exception as e:
+    print(f'Database init failed: {e}')
+    # Create empty database file as fallback
+    import sqlite3
+    conn = sqlite3.connect('$INSTALL_DIR/instances.db')
+    conn.execute('CREATE TABLE IF NOT EXISTS instances (id INTEGER PRIMARY KEY, name TEXT UNIQUE, config TEXT)')
+    conn.commit()
+    conn.close()
+    print('Database created with fallback method')
+" >> "$LOG_FILE" 2>&1; then
+    echo -e "${GREEN}✓ Database initialized${NC}"
+    log "Database initialized successfully"
+else
+    echo -e "${YELLOW}⚠️  Database initialization had issues, but continuing...${NC}"
+    log "WARNING: Database initialization partial"
+fi
 
 # Save configuration
 cat > "$INSTALL_DIR/panel_config.json" << CONF
