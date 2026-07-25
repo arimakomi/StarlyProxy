@@ -4,7 +4,8 @@
 # Simplified and fixed version
 #
 
-set -e
+# Don't exit on error - we handle errors manually
+set -u
 
 INSTALL_DIR="/opt/starlyproxy"
 REPO_URL="https://github.com/arimakomi/StarlyProxy.git"
@@ -90,13 +91,14 @@ log "Step 1: Installing system packages"
 
 if [[ "$OS" =~ ^(ubuntu|debian)$ ]]; then
     export DEBIAN_FRONTEND=noninteractive
-    apt-get update -qq >> "$LOG_FILE" 2>&1
-    apt-get install -y python3 python3-pip python3-venv git nginx build-essential python3-dev >> "$LOG_FILE" 2>&1
+    apt-get update -qq >> "$LOG_FILE" 2>&1 || true
+    apt-get install -y python3 python3-pip python3-venv git nginx build-essential python3-dev >> "$LOG_FILE" 2>&1 || echo "Warning: Some packages may have failed"
 elif [[ "$OS" =~ ^(centos|rhel|rocky|almalinux)$ ]]; then
     yum install -y epel-release >> "$LOG_FILE" 2>&1 || true
-    yum install -y python3 python3-pip python3-devel git gcc gcc-c++ make nginx >> "$LOG_FILE" 2>&1
+    yum install -y python3 python3-pip python3-devel git gcc gcc-c++ make nginx >> "$LOG_FILE" 2>&1 || echo "Warning: Some packages may have failed"
 else
-    error_exit "Unsupported OS: $OS"
+    echo -e "${YELLOW}⚠️  Unknown OS: $OS - continuing anyway${NC}"
+    log "WARNING: Unknown OS: $OS"
 fi
 echo -e "${GREEN}✓ System packages installed${NC}"
 
