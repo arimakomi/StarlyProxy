@@ -270,29 +270,94 @@ python3 -m venv "$VENV_DIR" >> "$LOG_FILE" 2>&1 || error_exit "Failed to create 
 source "$VENV_DIR/bin/activate" || error_exit "Failed to activate virtualenv"
 echo -e "${GREEN}✓ Virtual environment created${NC}"
 
-# [5/9] Python packages
+# [5/9] Python packages - REDESIGNED with robust error handling
 echo -e "${CYAN}[5/9]${NC} Installing Python packages..."
 log "Step 5: Installing Python packages"
+
+# Function to install single package with retry
+install_pip_package() {
+    local package=$1
+    local max_attempts=3
+    local attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        echo -e "${CYAN}   → Installing $package (attempt $attempt/$max_attempts)...${NC}"
+        log "Installing $package - attempt $attempt"
+        
+        if pip install --no-cache-dir "$package" >> "$LOG_FILE" 2>&1; then
+            echo -e "${GREEN}   ✓ $package installed${NC}"
+            log "$package installed successfully"
+            return 0
+        fi
+        
+        ((attempt++))
+        sleep 2
+    done
+    
+    log "WARNING: Failed to install $package after $max_attempts attempts"
+    return 1
+}
+
+# Upgrade pip first (critical)
 echo -e "${CYAN}   → Upgrading pip...${NC}"
-pip install --upgrade pip setuptools wheel >> "$LOG_FILE" 2>&1 || {
-    echo -e "${YELLOW}   ⚠️  Pip upgrade failed, continuing...${NC}"
+python3 -m pip install --upgrade pip >> "$LOG_FILE" 2>&1 || {
+    echo -e "${YELLOW}   ⚠️  Pip upgrade failed, using existing version${NC}"
     log "WARNING: pip upgrade failed"
 }
 
-echo -e "${CYAN}   → Installing core dependencies...${NC}"
-pip install netifaces psutil pyyaml >> "$LOG_FILE" 2>&1 || error_exit "Failed to install core packages"
+# Install essential packages one by one
+ESSENTIAL_PACKAGES=(
+    "setuptools"
+    "wheel" 
+    "netifaces"
+    "psutil"
+    "PyYAML"
+)
 
-echo -e "${CYAN}   → Installing web framework...${NC}"
-pip install "flask>=2.3.0" flask-cors >> "$LOG_FILE" 2>&1 || error_exit "Failed to install Flask"
+for pkg in "${ESSENTIAL_PACKAGES[@]}"; do
+    if ! install_pip_package "$pkg"; then
+        error_exit "Failed to install essential package: $pkg. Check $LOG_FILE for details."
+    fi
+done
 
-echo -e "${CYAN}   → Installing optional packages...${NC}"
-pip install colorama >> "$LOG_FILE" 2>&1 || {
-    echo -e "${YELLOW}   ⚠️  Optional packages skipped${NC}"
+# Install Flask (web framework)
+echo -e "${CYAN}   → Installing Flask web framework...${NC}"
+if ! pip install --no-cache-dir "Flask==2.3.3" >> "$LOG_FILE" 2>&1; then
+    echo -e "${YELLOW}   ⚠️  Flask 2.3.3 failed, trying older version...${NC}"
+    pip install --no-cache-dir "Flask==2.0.3" >> "$LOG_FILE" 2>&1 || error_exit "Failed to install Flask"
+fi
+echo -e "${GREEN}   ✓ Flask installed${NC}"
+
+# Flask-CORS (optional)
+echo -e "${CYAN}   → Installing Flask-CORS...${NC}"
+pip install --no-cache-dir flask-cors >> "$LOG_FILE" 2>&1 || {
+    echo -e "${YELLOW}   ⚠️  Flask-CORS skipped (optional)${NC}"
+    log "WARNING: flask-cors install failed"
+}
+
+# Colorama for CLI colors (optional)
+echo -e "${CYAN}   → Installing CLI enhancements...${NC}"
+pip install --no-cache-dir colorama >> "$LOG_FILE" 2>&1 || {
+    echo -e "${YELLOW}   ⚠️  Colorama skipped (optional)${NC}"
     log "WARNING: colorama install failed"
 }
 
-echo -e "${GREEN}✓ Python packages installed${NC}"
-log "Python packages installed successfully"
+# Verify critical imports
+echo -e "${CYAN}   → Verifying installation...${NC}"
+python3 << 'VERIFY' >> "$LOG_FILE" 2>&1 || error_exit "Package verification failed"
+try:
+    import netifaces
+    import psutil
+    import yaml
+    import flask
+    print("✓ All critical packages verified")
+except ImportError as e:
+    print(f"✗ Import failed: {e}")
+    exit(1)
+VERIFY
+
+echo -e "${GREEN}✓ Python packages installed and verified${NC}"
+log "Python packages installation completed successfully"
 
 # [6/9] CLI setup
 echo -e "${CYAN}[6/9]${NC} Setting up CLI command..."
