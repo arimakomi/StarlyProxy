@@ -1,0 +1,104 @@
+{% extends "base_v3.html" %}
+
+{% block title %}Dashboard — StarlyProxy{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Overview of your proxy instances</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total</div>
+        <div class="stat-value">{{ total }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Running</div>
+        <div class="stat-value" style="color: var(--success)">{{ running }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Stopped</div>
+        <div class="stat-value" style="color: var(--danger)">{{ stopped }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">CPU</div>
+        <div class="stat-value" style="font-size: 20px;">{{ system_info.cpu_count }}</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+    <div class="card">
+        <div class="card-header">
+            <span>Recent Instances</span>
+            <a href="/instances" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            {% if instances %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inst in instances[:5] %}
+                    <tr>
+                        <td>{{ inst.name }}</td>
+                        <td>
+                            {% if inst.status == 'running' %}
+                            <span class="badge badge-success">
+                                <span class="badge-dot"></span> Running
+                            </span>
+                            {% else %}
+                            <span class="badge badge-danger">
+                                <span class="badge-dot"></span> Stopped
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="/instance/{{ inst.name }}" class="btn btn-secondary btn-sm">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div style="padding: 32px; text-align: center;">
+                <i class="bi bi-inbox" style="font-size: 48px; color: var(--text-tertiary);"></i>
+                <p style="margin: 16px 0; color: var(--text-secondary);">No instances yet</p>
+                <a href="/add" class="btn btn-primary">Create First Instance</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">System Info</div>
+        <div class="card-body">
+            <table style="width: 100%; font-size: 14px;">
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 8px 0; color: var(--text-secondary);">OS</td>
+                    <td style="padding: 8px 0; text-align: right;">{{ system_info.os }} {{ system_info.os_version }}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 8px 0; color: var(--text-secondary);">Hostname</td>
+                    <td style="padding: 8px 0; text-align: right;">{{ system_info.hostname }}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 8px 0; color: var(--text-secondary);">Memory</td>
+                    <td style="padding: 8px 0; text-align: right;">{{ system_info.memory_total_gb }} GB</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; color: var(--text-secondary);">Python</td>
+                    <td style="padding: 8px 0; text-align: right;">{{ system_info.python_version }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

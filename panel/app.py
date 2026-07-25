@@ -32,7 +32,7 @@ except ImportError as e:
     print(f"sys.path: {sys.path}")
     sys.exit(1)
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'starlyproxy-change-in-production')
 CORS(app)
 
@@ -97,7 +97,7 @@ def index():
     
     system_info = get_system_info()
     
-    return render_template('dashboard.html',
+    return render_template('dashboard_v3.html',
                           instances=instances,
                           total=total,
                           running=running,
