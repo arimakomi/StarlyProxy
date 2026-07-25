@@ -153,7 +153,7 @@ echo -e "${GREEN}✓ Python packages installed${NC}"
 # [6/7] Database
 echo -e "${CYAN}[6/7]${NC} Initializing database..."
 mkdir -p "$INSTALL_DIR/data" >> "$LOG_FILE" 2>&1
-export PYTHONPATH="$INSTALL_DIR:$PYTHONPATH"
+export PYTHONPATH="${PYTHONPATH:-}:$INSTALL_DIR"
 
 # Initialize database
 python3 << 'DBINIT' >> "$LOG_FILE" 2>&1 || true
