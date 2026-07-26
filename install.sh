@@ -19,6 +19,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
 NC='\033[0m'
 
 log() {
@@ -189,6 +190,7 @@ User=root
 WorkingDirectory=$INSTALL_DIR
 Environment="PATH=$VENV_DIR/bin"
 Environment="PYTHONPATH=$INSTALL_DIR"
+Environment="FLASK_PORT=$PANEL_PORT"
 ExecStart=$VENV_DIR/bin/python3 $INSTALL_DIR/panel/app.py
 Restart=always
 RestartSec=3
@@ -211,16 +213,8 @@ else
 fi
 
 # CLI tool
-cat > /usr/local/bin/starlyproxy << 'CLIEOF'
-#!/bin/bash
-VENV="/opt/starlyproxy/venv"
-source "$VENV/bin/activate"
-export PYTHONPATH="/opt/starlyproxy:${PYTHONPATH:-}"
-cd /opt/starlyproxy
-python3 -m cli "$@"
-CLIEOF
-
-chmod +x /usr/local/bin/starlyproxy
+chmod +x "$INSTALL_DIR/starlyproxy-wrapper.sh"
+ln -sf "$INSTALL_DIR/starlyproxy-wrapper.sh" /usr/local/bin/starlyproxy
 
 echo ""
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
