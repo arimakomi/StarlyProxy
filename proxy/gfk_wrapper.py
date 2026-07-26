@@ -6,7 +6,6 @@ Manages GFK client/server instances with proper lifecycle
 import subprocess
 import sys
 import os
-import json
 import signal
 from pathlib import Path
 from typing import Optional, Dict, Any

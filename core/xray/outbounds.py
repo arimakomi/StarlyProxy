@@ -3,8 +3,6 @@ Xray Outbound Manager
 Manages outbound connections and routing
 """
 
-import json
-from pathlib import Path
 from typing import Dict, List, Optional
 from .config import XrayConfig
 

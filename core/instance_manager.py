@@ -3,8 +3,6 @@ Instance Manager for StarlyProxy
 Manages multiple proxy instances (Paqet and GFK)
 """
 
-import subprocess
-import signal
 import time
 import psutil
 from pathlib import Path

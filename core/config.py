@@ -4,8 +4,6 @@ Handles all config file operations and validation
 """
 
 import json
-import yaml
-import os
 from pathlib import Path
 from typing import Dict, Any, Optional
 import logging
@@ -39,7 +37,7 @@ class ConfigManager:
         
         # Default config
         default_config = {
-            "version": "3.0.0",
+            "version": "3.0.1",
             "base_socks_port": 1080,
             "base_quic_port": 14000,
             "log_level": "INFO",

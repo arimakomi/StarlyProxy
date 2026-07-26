@@ -19,7 +19,7 @@ class BackupManager:
         self.backup_dir.mkdir(parents=True, exist_ok=True)
         
         self.base_dir = Path("/opt/starlyproxy")
-        self.db_file = self.base_dir / "instances.db"
+        self.db_file = self.base_dir / "starlyproxy.db"
         self.config_file = self.base_dir / "panel_config.json"
         self.auth_file = self.base_dir / "auth.json"
     
@@ -34,7 +34,7 @@ class BackupManager:
         with tarfile.open(backup_path, "w:gz") as tar:
             # Add database
             if self.db_file.exists():
-                tar.add(self.db_file, arcname="instances.db")
+                tar.add(self.db_file, arcname="starlyproxy.db")
             
             # Add panel config
             if self.config_file.exists():
@@ -54,7 +54,7 @@ class BackupManager:
             "name": name,
             "created_at": datetime.now().isoformat(),
             "size_bytes": backup_path.stat().st_size,
-            "files": ["instances.db", "panel_config.json", "auth.json", "instances/"]
+            "files": ["starlyproxy.db", "panel_config.json", "auth.json", "instances/"]
         }
         
         metadata_path = self.backup_dir / f"{name}.json"
@@ -79,8 +79,8 @@ class BackupManager:
                 tar.extractall(temp_dir)
             
             # Restore files
-            if (temp_dir / "instances.db").exists():
-                shutil.copy2(temp_dir / "instances.db", self.db_file)
+            if (temp_dir / "starlyproxy.db").exists():
+                shutil.copy2(temp_dir / "starlyproxy.db", self.db_file)
             
             if (temp_dir / "panel_config.json").exists():
                 shutil.copy2(temp_dir / "panel_config.json", self.config_file)

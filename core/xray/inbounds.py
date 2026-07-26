@@ -3,8 +3,6 @@ Xray Inbound Manager
 Manages inbound connections (protocols, ports, clients)
 """
 
-import json
-from pathlib import Path
 from typing import Dict, List, Optional
 from .config import XrayConfig
 

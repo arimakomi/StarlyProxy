@@ -4,10 +4,11 @@ Handles Xray-core process lifecycle and configuration management
 """
 
 import subprocess
-import json
+import signal
 import os
+import psutil
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, List, Tuple
 
 
 class XrayManager:

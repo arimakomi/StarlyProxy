@@ -6,7 +6,6 @@ Used by systemd service
 import sys
 import time
 import logging
-from pathlib import Path
 
 # Setup logging
 logging.basicConfig(

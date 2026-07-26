@@ -79,7 +79,6 @@ def register_xray_routes(app, xray_mgr, xray_inbound_mgr, xray_outbound_mgr, xra
             protocol = data['protocol']
             port = data['port']
             tag = data.get('tag')
-            network = data.get('network', 'tcp')
             
             # Create default client for testing
             clients = [{'id': xray_inbound_mgr.config.generate_uuid(), 'email': 'default@test'}]

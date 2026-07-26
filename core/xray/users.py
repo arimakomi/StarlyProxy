@@ -5,7 +5,6 @@ Manages clients/users for Xray protocols
 
 import json
 import uuid
-from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import datetime
 from .config import XrayConfig

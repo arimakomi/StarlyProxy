@@ -7,7 +7,6 @@ import sqlite3
 import json
 from pathlib import Path
 from typing import Dict, Any, Optional, List
-from datetime import datetime
 import logging
 
 logger = logging.getLogger("StarlyProxy.Database")

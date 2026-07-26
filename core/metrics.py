@@ -5,7 +5,7 @@ Collects and stores instance metrics
 
 import time
 import psutil
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Optional
 from .database import DatabaseManager
 
@@ -80,10 +80,8 @@ class MetricsCollector:
     def _store_metrics(self, metrics: Dict):
         """Store metrics in database"""
         # Implementation would store in database
-        pass
     
     def cleanup_old_metrics(self, days: int = 7):
         """Remove metrics older than specified days"""
-        cutoff = datetime.now() - timedelta(days=days)
-        # Implementation would delete from database
-        pass
+        # TODO: not yet implemented — no metrics are persisted to the
+        # database yet (see _store_metrics), so there is nothing to clean up.

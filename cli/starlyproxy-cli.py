@@ -20,8 +20,8 @@ if str(PROJECT_ROOT) not in sys.path:
 os.environ['PYTHONPATH'] = str(PROJECT_ROOT)
 
 try:
-    from core import InstanceManager, ConfigManager, DatabaseManager
-    from core.utils import check_root_privileges, format_bytes, format_duration
+    from core import InstanceManager, DatabaseManager
+    from core.utils import check_root_privileges, format_duration
 except ImportError as e:
     print(f"Error importing core modules: {e}")
     print(f"PROJECT_ROOT: {PROJECT_ROOT}")

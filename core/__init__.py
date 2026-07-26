@@ -3,7 +3,7 @@ StarlyProxy Core Module
 Central management for multi-instance proxy system
 """
 
-__version__ = "3.0.0"
+__version__ = "3.0.1"
 __author__ = "STaRly (Artin)"
 
 from .config import ConfigManager

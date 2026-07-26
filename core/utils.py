@@ -8,7 +8,7 @@ import subprocess
 import re
 import netifaces
 import ipaddress
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple
 import logging
 
 logger = logging.getLogger("StarlyProxy.Utils")

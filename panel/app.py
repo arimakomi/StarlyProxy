@@ -9,6 +9,7 @@ from flask_cors import CORS
 from functools import wraps
 import sys
 import os
+import subprocess
 from pathlib import Path
 import json
 
@@ -368,14 +369,6 @@ def api_start_all():
     return jsonify({'success': True, 'started': started})
 
 
-if __name__ == '__main__':
-    port = int(os.environ.get('FLASK_PORT', 5000))
-    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
-    
-    print(f"Starting StarlyProxy Enhanced Web Panel on port {port}...")
-    app.run(host='0.0.0.0', port=port, debug=debug)
-
-
 # Backup API Routes
 @app.route('/api/backups/create', methods=['POST'])
 @login_required
@@ -478,34 +471,44 @@ def api_system_metrics():
 @app.route('/api/system/check-updates', methods=['GET'])
 @login_required
 def api_check_updates():
-    """API: Check for updates"""
+    """API: Check for updates via git"""
     try:
-        result = subprocess.run(
+        subprocess.run(
             ['git', 'fetch', 'origin', 'main'],
             cwd=PROJECT_ROOT,
             capture_output=True,
-            timeout=10
+            timeout=30
         )
-        
+
         current = subprocess.run(
             ['git', 'describe', '--tags', '--always'],
             cwd=PROJECT_ROOT,
             capture_output=True,
             text=True
         ).stdout.strip()
-        
+
         latest = subprocess.run(
             ['git', 'describe', '--tags', '--always', 'origin/main'],
             cwd=PROJECT_ROOT,
             capture_output=True,
             text=True
         ).stdout.strip()
-        
+
+        status = subprocess.run(
+            ['git', 'status', '-uno'],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=10
+        ).stdout
+
+        update_available = current != latest or 'Your branch is behind' in status
+
         return jsonify({
             'success': True,
             'current_version': current,
             'latest_version': latest,
-            'update_available': current != latest
+            'update_available': update_available
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -514,52 +517,35 @@ def api_check_updates():
 @app.route('/api/system/update', methods=['POST'])
 @login_required
 def api_system_update():
-    """API: Perform system update"""
+    """API: Perform system update via git pull and restart the panel service"""
     try:
-        # Run update script in background
+        result = subprocess.run(
+            ['git', 'pull', 'origin', 'main'],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+
+        if result.returncode != 0:
+            return jsonify({'success': False, 'error': result.stderr.strip()}), 500
+
+        # Restart the panel service in the background so this request can
+        # still return a response to the client first.
         subprocess.Popen(
-            ['/bin/bash', str(PROJECT_ROOT / 'update.sh')],
+            ['systemctl', 'restart', 'starlyproxy-panel'],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )
-        return jsonify({'success': True})
+
+        return jsonify({'success': True, 'message': 'Update applied, panel is restarting'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/api/system/check-updates', methods=['GET'])
-@login_required
-def api_check_updates():
-    """Check for updates via git"""
-    try:
-        import subprocess
-        subprocess.run(['git', '-C', '/opt/starlyproxy', 'remote', 'update'], 
-                      capture_output=True, timeout=30)
-        result = subprocess.run(['git', '-C', '/opt/starlyproxy', 'status', '-uno'],
-                               capture_output=True, text=True, timeout=10)
-        update_available = 'Your branch is behind' in result.stdout
-        return jsonify({'success': True, 'update_available': update_available})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@app.route('/api/system/update', methods=['POST'])
-@login_required
-def api_system_update():
-    """Perform system update via git pull"""
-    try:
-        import subprocess
-        result = subprocess.run(['git', '-C', '/opt/starlyproxy', 'pull', 'origin', 'main'],
-                               capture_output=True, text=True, timeout=30)
-        if result.returncode == 0:
-            subprocess.Popen(['systemctl', 'restart', 'starlyproxy-panel'])
-            return jsonify({'success': True, 'message': 'Update successful'})
-        else:
-            return jsonify({'success': False, 'message': result.stderr}), 500
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
 if __name__ == '__main__':
-    print(f"Starting StarlyProxy Enhanced Web Panel on port {PORT}...")
-    app.run(host='0.0.0.0', port=PORT)
+    port = int(os.environ.get('FLASK_PORT', 5000))
+    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+
+    print(f"Starting StarlyProxy Enhanced Web Panel on port {port}...")
+    app.run(host='0.0.0.0', port=port, debug=debug)
